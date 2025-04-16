@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from "react";
+import { createContext, useState, useContext, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 
@@ -23,8 +23,24 @@ export const AuthProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Helper to handle common error responses
+    const handleError = useCallback((err) => {
+        console.error("Auth error:", err);
+        if (err.response && err.response.data && err.response.data.message) {
+            setError(err.response.data.message);
+        } else if (err.message) {
+            setError(err.message);
+        } else {
+            setError("An unknown error occurred. Please try again.");
+        }
+        return false;
+    }, []);
+
     // Set up axios defaults and interceptors
     useEffect(() => {
+        // Configure axios defaults
+        axios.defaults.baseURL = `${window.location.origin}/api`;
+        
         // Add axios interceptor to handle expired tokens
         const interceptor = axios.interceptors.response.use(
             response => response,
@@ -35,6 +51,7 @@ export const AuthProvider = ({ children }) => {
                     delete axios.defaults.headers.common["Authorization"];
                     setUser(null);
                     setIsAuthenticated(false);
+                    setError("Your session has expired. Please log in again.");
                 }
                 return Promise.reject(error);
             }
@@ -88,16 +105,17 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.post("/api/auth/login", { email, password });
             
-            if (res.data.token) {
+            if (res.data && res.data.token) {
                 localStorage.setItem("token", res.data.token);
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
                 setUser(res.data.user);
                 setIsAuthenticated(true);
                 return true;
             }
-        } catch (err) {
-            setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+            
             return false;
+        } catch (err) {
+            return handleError(err);
         } finally {
             setIsLoading(false);
         }
@@ -111,16 +129,17 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.post("/api/auth/register", { name, email, password });
             
-            if (res.data.token) {
+            if (res.data && res.data.token) {
                 localStorage.setItem("token", res.data.token);
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
                 setUser(res.data.user);
                 setIsAuthenticated(true);
                 return true;
             }
-        } catch (err) {
-            setError(err.response?.data?.message || "Registration failed. Please try again.");
+            
             return false;
+        } catch (err) {
+            return handleError(err);
         } finally {
             setIsLoading(false);
         }
@@ -134,13 +153,14 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.put("/api/auth/update-profile", userData);
             
-            if (res.data.user) {
+            if (res.data && res.data.user) {
                 setUser(res.data.user);
                 return true;
             }
-        } catch (err) {
-            setError(err.response?.data?.message || "Profile update failed. Please try again.");
+            
             return false;
+        } catch (err) {
+            return handleError(err);
         } finally {
             setIsLoading(false);
         }
@@ -155,8 +175,7 @@ export const AuthProvider = ({ children }) => {
             await axios.post("/api/auth/forgot-password", { email });
             return true;
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to send reset email. Please try again.");
-            return false;
+            return handleError(err);
         } finally {
             setIsLoading(false);
         }
@@ -171,8 +190,7 @@ export const AuthProvider = ({ children }) => {
             await axios.post("/api/auth/reset-password", { token, password });
             return true;
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to reset password. Please try again.");
-            return false;
+            return handleError(err);
         } finally {
             setIsLoading(false);
         }
@@ -184,6 +202,7 @@ export const AuthProvider = ({ children }) => {
         delete axios.defaults.headers.common["Authorization"];
         setUser(null);
         setIsAuthenticated(false);
+        setError(null);
     };
 
     return (
