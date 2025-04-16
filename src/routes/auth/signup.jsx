@@ -11,21 +11,23 @@ const SignupPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const { signup, isLoading, error, setError } = useAuth();
     const navigate = useNavigate();
-
     
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-    
-        // Place the new validation HERE, before the signup call
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])[a-zA-Z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            setError("Password must be at least 8 characters long and contain one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*()_+-=[]{};:\"|,.<>/?)");
+        
+        if (!name || !email || !password) {
+            setError("Please fill in all fields.");
             return;
         }
-    
+        
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters.");
+            return;
+        }
+        
         const success = await signup(name, email, password);
-    
+        
         if (success) {
             navigate("/");
         }
@@ -151,21 +153,11 @@ const SignupPage = () => {
                         />
                         <label htmlFor="terms" className="ml-2 text-sm text-slate-600">
                             I agree to the{" "}
-                            <a 
-                                href="https://docs.google.com/document/d/18YQf-p_lAWLWkv4xXltvtJMY8fW0MRn5ur2BUNjhdHE/edit?tab=t.lx86jybafkpq" 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="font-medium text-[#1e628c] hover:underline"
-                            >
-                                Terms & Conditions
+                            <a href="#" className="font-medium text-[#1e628c] hover:underline">
+                                Terms of Service
                             </a>{" "}
                             and{" "}
-                            <a 
-                                href="https://docs.google.com/document/d/18YQf-p_lAWLWkv4xXltvtJMY8fW0MRn5ur2BUNjhdHE/edit?tab=t.0" 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="font-medium text-[#1e628c] hover:underline"
-                            >
+                            <a href="#" className="font-medium text-[#1e628c] hover:underline">
                                 Privacy Policy
                             </a>
                         </label>

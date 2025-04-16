@@ -20,31 +20,30 @@ const ResetPasswordPage = () => {
         }
     }, [token, navigate]);
     
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    
-    if (!password || !confirmPassword) {
-        setError("Please fill in all fields.");
-        return;
-    }
-    
-    // Place the new validation HERE, before checking password match
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])[a-zA-Z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            setError("Password must be at least 8 characters long and contain one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*()_+-=[]{};:\"|,.<>/?)");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        
+        if (!password || !confirmPassword) {
+            setError("Please fill in all fields.");
             return;
         }
-    
+        
+        if (password.length < 6) {
+            setError("Password must be at least 6 characters.");
+            return;
+        }
+        
         if (password !== confirmPassword) {
             setError("Passwords do not match.");
             return;
         }
-    
+        
         const success = await resetPassword(token, password);
-    
+        
         if (success) {
             setIsSuccess(true);
+            // Redirect to login after 3 seconds
             setTimeout(() => {
                 navigate("/login");
             }, 3000);
