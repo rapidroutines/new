@@ -324,7 +324,7 @@ const SignupPage = () => {
                         <span>Password requirements:</span>
                     </div>
                     <ul className="ml-6 list-disc space-y-1">
-                        <li>At least 6 characters</li>
+                        <li>At least 8 characters</li>
                         <li>Longer passwords are stronger</li>
                         <li>Required to use letters, numbers, and symbols</li>
                     </ul>
