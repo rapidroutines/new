@@ -1,14 +1,11 @@
 import { useState } from "react";
 import { Footer } from "@/layouts/footer";
-import { LimitedFunctionalityBanner } from "@/components/limited-functionality-banner";
 
-const ExerciseTrackerPage = ({ limited = false }) => {
+const ExerciseTrackerPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     
     return (
         <div className="flex flex-col min-h-screen">
-            {limited && <LimitedFunctionalityBanner featureName="exercise tracker" />}
-            
             <div className="flex-grow flex flex-col gap-y-4 p-0 md:p-2">
                 {/* Exercise Tracker iframe - Full screen on mobile, properly sized on larger screens */}
                 <div className="relative rounded-lg shadow-sm overflow-hidden flex-grow h-[calc(100vh-120px)]">
