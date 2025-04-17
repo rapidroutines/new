@@ -173,30 +173,31 @@ const ProfilePage = () => {
     };
     
     // Function to clear saved exercises
+
     const clearSavedExercises = () => {
-        if (confirm("Are you sure you want to clear all saved exercises? This cannot be undone.")) {
-            try {
-                // Use the savedExercises context to clear
-                const updatedSavedExercises = [];
-                localStorage.setItem("savedExercises_data", JSON.stringify(updatedSavedExercises));
-                
-                // Show success message
-                setSuccessMessage("Saved exercises cleared successfully!");
-                
-                // Clear message and reload after timeout
-                setTimeout(() => {
-                    setSuccessMessage("");
-                    window.location.reload();
-                }, 1500);
-            } catch (error) {
-                console.error("Error clearing saved exercises:", error);
-                setErrorMessage("Error clearing saved exercises. Please try again.");
-                
-                setTimeout(() => {
-                    setErrorMessage("");
-                }, 3000);
-            }
+      if (confirm("Are you sure you want to clear all saved exercises? This cannot be undone.")) {
+        try {
+          // Use the context's function to remove all saved exercises instead of manipulating localStorage directly
+          const success = removeSavedExercises(); // This is what needs to be added to the SavedExercisesContext
+      
+          if (success) {
+            // Show success message
+            setSuccessMessage("Saved exercises cleared successfully!");
+        
+            // Clear message after timeout
+            setTimeout(() => {
+              setSuccessMessage("");
+            }, 2000);
+          }
+        } catch (error) {
+          console.error("Error clearing saved exercises:", error);
+          setErrorMessage("Error clearing saved exercises. Please try again.");
+      
+          setTimeout(() => {
+            setErrorMessage("");
+          }, 3000);
         }
+      }
     };
     
     // Function to delete account and all data

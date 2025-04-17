@@ -30,7 +30,7 @@ app.use(express.json({ limit: '50mb' })); // Increased limit for larger payloads
 const allowedOrigins = [
     'http://localhost:3000', 
     'https://new-5t2n.onrender.com',
-    'https://rapidroutines.org' // Add your production domain
+    'https://www.rapidroutines-dashboard.org',
 ];
 
 app.use(cors({

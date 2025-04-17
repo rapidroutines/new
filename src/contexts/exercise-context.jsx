@@ -1,58 +1,40 @@
+// src/contexts/exercise-context.jsx
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
-import { syncUserData, fetchUserData } from "../services/user-data-service";
+import { syncUserData, syncUserDataDeletion, fetchUserData, getFromLocalStorage } from "../services/user-data-service";
 
-// Create exercise tracking context
-const ExerciseContext = createContext({
-  exercises: [],
-  addExercise: () => {},
-  getExercises: () => [],
-  deleteExercise: () => false,
-  deleteAllExercises: () => false,
-  isLoading: false,
-  syncExercisesWithCloud: () => {},
-});
+// Create context
+const ExerciseContext = createContext({});
 
+// Provider component
 export const ExerciseProvider = ({ children }) => {
   const [exercises, setExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
-  // Load exercises from cloud or localStorage on initial render
+  // Load exercises on mount
   useEffect(() => {
     const loadExercises = async () => {
       try {
         setIsLoading(true);
         
-        if (isAuthenticated) {
-          // Try to fetch from cloud first
-          const result = await fetchUserData();
-          if (result.success && result.data.exerciseLog && result.data.exerciseLog.length > 0) {
-            setExercises(result.data.exerciseLog);
-            console.log("Loaded exercises from cloud:", result.data.exerciseLog.length);
-            // Also update localStorage as backup
-            localStorage.setItem("exercises_data", JSON.stringify(result.data.exerciseLog));
-            setIsLoading(false);
-            return;
-          }
+        // 1. First try from localStorage for immediate display
+        const localExercises = getFromLocalStorage("exercises_data", []);
+        if (localExercises.length > 0) {
+          setExercises(localExercises);
         }
-
-        // Fallback to localStorage
-        const storedExercises = localStorage.getItem("exercises_data");
         
-        if (storedExercises) {
-          const parsedExercises = JSON.parse(storedExercises);
-          setExercises(parsedExercises);
-          console.log("Loaded exercises from storage:", parsedExercises.length);
+        // 2. If authenticated, try to get from server
+        if (isAuthenticated) {
+          const result = await fetchUserData();
           
-          // If authenticated but cloud data was empty, sync localStorage data to cloud
-          if (isAuthenticated && parsedExercises.length > 0) {
-            syncUserData("exerciseLog", parsedExercises);
+          if (result.success && result.data?.exerciseLog?.length > 0) {
+            setExercises(result.data.exerciseLog);
+          } else if (localExercises.length > 0) {
+            // 3. If server has no data but we have local data, sync to server
+            await syncUserData("exerciseLog", localExercises);
           }
-        } else {
-          console.log("No stored exercises found");
-          setExercises([]);
         }
       } catch (error) {
         console.error("Error loading exercises:", error);
@@ -64,79 +46,62 @@ export const ExerciseProvider = ({ children }) => {
     loadExercises();
   }, [isAuthenticated]);
 
-  // Sync exercises to cloud when authenticated and exercises change
+  // Sync when exercises change
   useEffect(() => {
-    const syncToCloud = async () => {
-      if (isAuthenticated && exercises.length > 0 && !isLoading) {
-        try {
-          await syncUserData("exerciseLog", exercises);
-          console.log("Synced exercises to cloud:", exercises.length);
-        } catch (error) {
-          console.error("Error syncing exercises to cloud:", error);
-        }
+    const syncExercises = async () => {
+      if (isAuthenticated && exercises.length > 0) {
+        await syncUserData("exerciseLog", exercises);
       }
     };
-
-    // Only run after initial loading is complete
+    
+    // Skip initial sync
     if (!isLoading) {
-      syncToCloud();
+      syncExercises();
     }
   }, [exercises, isAuthenticated, isLoading]);
 
-  // Add a new exercise record
+  // Add a new exercise
   const addExercise = (exerciseData) => {
+    if (!exerciseData) return false;
+    
     const newExercise = {
-      id: Date.now().toString(), // Use string IDs for consistent format
+      id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       ...exerciseData
     };
-
-    console.log("Adding new exercise:", newExercise);
     
-    setExercises(prevExercises => {
-      const updatedExercises = [...prevExercises, newExercise];
-      
-      // Also update in localStorage immediately for redundancy
-      try {
-        localStorage.setItem("exercises_data", JSON.stringify(updatedExercises));
-        console.log("Updated exercises in storage:", updatedExercises.length);
-      } catch (error) {
-        console.error("Error immediately saving exercise to storage:", error);
-      }
-      
-      return updatedExercises;
-    });
-    
+    setExercises(prev => [...prev, newExercise]);
     return true;
   };
 
   // Delete a specific exercise
   const deleteExercise = (exerciseId) => {
-    setExercises(prevExercises => {
-      const updatedExercises = prevExercises.filter(ex => ex.id !== exerciseId);
-      
-      // Update localStorage
-      try {
-        localStorage.setItem("exercises_data", JSON.stringify(updatedExercises));
-      } catch (error) {
-        console.error("Error saving updated exercises to storage:", error);
-      }
-      
-      return updatedExercises;
-    });
+    if (!exerciseId) return false;
+    
+    // Filter out the deleted exercise
+    const updatedExercises = exercises.filter(ex => ex.id !== exerciseId);
+    
+    // Update local state
+    setExercises(updatedExercises);
+    
+    // Sync with server if authenticated - use the deletion sync function
+    if (isAuthenticated) {
+      syncUserDataDeletion("exerciseLog", updatedExercises)
+        .catch(err => console.error("Error syncing exercise deletion:", err));
+    }
     
     return true;
   };
 
   // Delete all exercises
   const deleteAllExercises = () => {
+    // Clear local state
     setExercises([]);
     
-    // Clear in localStorage
-    try {
-      localStorage.setItem("exercises_data", JSON.stringify([]));
-    } catch (error) {
-      console.error("Error clearing exercises in storage:", error);
+    // Sync empty array with server if authenticated
+    if (isAuthenticated) {
+      syncUserDataDeletion("exerciseLog", [])
+        .catch(err => console.error("Error syncing all exercises deletion:", err));
     }
     
     return true;
@@ -144,51 +109,51 @@ export const ExerciseProvider = ({ children }) => {
 
   // Get exercises with optional filtering
   const getExercises = (count = null) => {
-    if (!exercises || exercises.length === 0) return [];
+    if (!exercises?.length) return [];
     
     // Sort by timestamp (newest first)
     const sortedExercises = [...exercises].sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
     );
     
-    // Return limited number if count is specified
     return count ? sortedExercises.slice(0, count) : sortedExercises;
   };
 
-  // Manual sync function for explicit calls
+  // Manual sync function
   const syncExercisesWithCloud = async () => {
-    if (!isAuthenticated || exercises.length === 0) return false;
-
+    if (!isAuthenticated) return false;
+    
     try {
+      setIsLoading(true);
       const result = await syncUserData("exerciseLog", exercises);
       return result.success;
     } catch (error) {
-      console.error("Error in manual sync of exercises:", error);
+      console.error("Error syncing exercises:", error);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <ExerciseContext.Provider
-      value={{
-        exercises,
-        addExercise,
-        getExercises,
-        deleteExercise,
-        deleteAllExercises,
-        isLoading,
-        syncExercisesWithCloud
-      }}
-    >
-      {children}
-    </ExerciseContext.Provider>
-  );
+  // Context value
+  const value = {
+    exercises,
+    addExercise,
+    getExercises,
+    deleteExercise,
+    deleteAllExercises,
+    isLoading,
+    syncExercisesWithCloud
+  };
+
+  return <ExerciseContext.Provider value={value}>{children}</ExerciseContext.Provider>;
 };
 
 ExerciseProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+// Custom hook
 export const useExercises = () => {
   const context = useContext(ExerciseContext);
   
@@ -198,3 +163,5 @@ export const useExercises = () => {
   
   return context;
 };
+
+export default ExerciseContext;

@@ -127,7 +127,6 @@ const ChatbotPage = () => {
 
     return (
         <div className="flex flex-col gap-y-6">
-            <h1 className="title">AI Fitness Assistant</h1>
             
             {/* Notification */}
             {notification && (

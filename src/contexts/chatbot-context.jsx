@@ -1,57 +1,39 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
-import { syncUserData, fetchUserData } from "../services/user-data-service";
+import { syncUserData, syncUserDataDeletion, fetchUserData, getFromLocalStorage } from "../services/user-data-service";
 
-// Create chatbot history context
-const ChatbotContext = createContext({
-  chatHistory: [],
-  addChatSession: () => {},
-  getChatHistory: () => [],
-  deleteChatSession: () => false,
-  deleteAllChatSessions: () => false,
-  isLoading: false,
-  syncChatHistoryWithCloud: () => {},
-});
+// Create context
+const ChatbotContext = createContext({});
 
+// Provider component
 export const ChatbotProvider = ({ children }) => {
   const [chatHistory, setChatHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
-  // Load chat history from cloud or localStorage on initial render
+  // Load chat history on mount
   useEffect(() => {
     const loadChatHistory = async () => {
       try {
         setIsLoading(true);
-
-        if (isAuthenticated) {
-          // Try to fetch from cloud first
-          const result = await fetchUserData();
-          if (result.success && result.data.chatHistory && result.data.chatHistory.length > 0) {
-            setChatHistory(result.data.chatHistory);
-            console.log("Loaded chat history from cloud:", result.data.chatHistory.length);
-            // Also update localStorage as backup
-            localStorage.setItem("chatbot_history_data", JSON.stringify(result.data.chatHistory));
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // Fallback to localStorage
-        const storedHistory = localStorage.getItem("chatbot_history_data");
         
-        if (storedHistory) {
-          const parsedHistory = JSON.parse(storedHistory);
-          setChatHistory(parsedHistory);
-          console.log("Loaded chat history from local storage:", parsedHistory.length);
+        // 1. First try from localStorage for immediate display
+        const localHistory = getFromLocalStorage("chatbot_history_data", []);
+        if (localHistory.length > 0) {
+          setChatHistory(localHistory);
+        }
+        
+        // 2. If authenticated, try to get from server
+        if (isAuthenticated) {
+          const result = await fetchUserData();
           
-          // If authenticated but cloud data was empty, sync localStorage data to cloud
-          if (isAuthenticated && parsedHistory.length > 0) {
-            syncUserData("chatHistory", parsedHistory);
+          if (result.success && result.data?.chatHistory?.length > 0) {
+            setChatHistory(result.data.chatHistory);
+          } else if (localHistory.length > 0) {
+            // 3. If server has no data but we have local data, sync to server
+            await syncUserData("chatHistory", localHistory);
           }
-        } else {
-          setChatHistory([]);
         }
       } catch (error) {
         console.error("Error loading chat history:", error);
@@ -63,30 +45,25 @@ export const ChatbotProvider = ({ children }) => {
     loadChatHistory();
   }, [isAuthenticated]);
 
-  // Sync chat history to cloud when authenticated and history changes
+  // Sync when chat history changes
   useEffect(() => {
-    const syncToCloud = async () => {
-      if (isAuthenticated && !isLoading) {
-        try {
-          await syncUserData("chatHistory", chatHistory);
-          console.log("Synced chat history to cloud:", chatHistory.length);
-        } catch (error) {
-          console.error("Error syncing chat history to cloud:", error);
-        }
+    const syncHistory = async () => {
+      if (isAuthenticated && chatHistory.length > 0) {
+        await syncUserData("chatHistory", chatHistory);
       }
     };
-
-    // Only sync if not in initial loading state
+    
+    // Skip initial sync
     if (!isLoading) {
-      syncToCloud();
+      syncHistory();
     }
   }, [chatHistory, isAuthenticated, isLoading]);
 
   // Generate a summary based on conversation
   const generateSummary = (messages) => {
-    // Simple summary generator - uses first user message for title
-    // and counts messages to determine length
-    if (!messages || messages.length === 0) return {};
+    if (!messages || messages.length === 0) {
+      return { title: "New chat", messageCount: 0, userMsgCount: 0, botMsgCount: 0 };
+    }
     
     // Find first user message for title
     const firstUserMessage = messages.find(m => m.role === "user")?.content || "Chat session";
@@ -110,58 +87,49 @@ export const ChatbotProvider = ({ children }) => {
 
   // Add a new chat session
   const addChatSession = (sessionData) => {
+    if (!sessionData?.messages?.length) {
+      return false;
+    }
+    
     const newSession = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
-      messages: sessionData.messages || [],
+      messages: sessionData.messages,
       summary: generateSummary(sessionData.messages)
     };
-
-    console.log("Adding new chat session:", newSession);
     
-    setChatHistory(prevHistory => {
-      const updatedHistory = [newSession, ...prevHistory];
-      
-      // Update localStorage
-      try {
-        localStorage.setItem("chatbot_history_data", JSON.stringify(updatedHistory));
-      } catch (error) {
-        console.error("Error saving chat history to localStorage:", error);
-      }
-      
-      return updatedHistory;
-    });
-    
+    setChatHistory(prev => [newSession, ...prev]);
     return true;
   };
 
   // Delete a specific chat session
   const deleteChatSession = (sessionId) => {
-    setChatHistory(prevHistory => {
-      const updatedHistory = prevHistory.filter(session => session.id !== sessionId);
-      
-      // Update localStorage
-      try {
-        localStorage.setItem("chatbot_history_data", JSON.stringify(updatedHistory));
-      } catch (error) {
-        console.error("Error saving updated chat history to localStorage:", error);
-      }
-      
-      return updatedHistory;
-    });
+    if (!sessionId) return false;
+    
+    // Filter out the deleted session
+    const updatedHistory = chatHistory.filter(session => session.id !== sessionId);
+    
+    // Update local state
+    setChatHistory(updatedHistory);
+    
+    // Sync with server if authenticated - use the deletion sync function
+    if (isAuthenticated) {
+      syncUserDataDeletion("chatHistory", updatedHistory)
+        .catch(err => console.error("Error syncing chat deletion:", err));
+    }
     
     return true;
   };
 
   // Delete all chat sessions
   const deleteAllChatSessions = () => {
+    // Clear local state
     setChatHistory([]);
     
-    // Clear in localStorage
-    try {
-      localStorage.setItem("chatbot_history_data", JSON.stringify([]));
-    } catch (error) {
-      console.error("Error clearing chat history in localStorage:", error);
+    // Sync empty array with server if authenticated
+    if (isAuthenticated) {
+      syncUserDataDeletion("chatHistory", [])
+        .catch(err => console.error("Error syncing all chats deletion:", err));
     }
     
     return true;
@@ -169,46 +137,45 @@ export const ChatbotProvider = ({ children }) => {
 
   // Get chat history with optional filtering
   const getChatHistory = (count = null) => {
-    if (!chatHistory || chatHistory.length === 0) return [];
-    
-    // Return limited number if count is specified
+    if (!chatHistory?.length) return [];
     return count ? chatHistory.slice(0, count) : chatHistory;
   };
 
-  // Manual sync function for explicit calls
+  // Manual sync function
   const syncChatHistoryWithCloud = async () => {
     if (!isAuthenticated) return false;
-
+    
     try {
+      setIsLoading(true);
       const result = await syncUserData("chatHistory", chatHistory);
       return result.success;
     } catch (error) {
-      console.error("Error in manual sync of chat history:", error);
+      console.error("Error syncing chat history:", error);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <ChatbotContext.Provider
-      value={{
-        chatHistory,
-        addChatSession,
-        getChatHistory,
-        deleteChatSession,
-        deleteAllChatSessions,
-        isLoading,
-        syncChatHistoryWithCloud
-      }}
-    >
-      {children}
-    </ChatbotContext.Provider>
-  );
+  // Context value
+  const value = {
+    chatHistory,
+    addChatSession,
+    getChatHistory,
+    deleteChatSession,
+    deleteAllChatSessions,
+    isLoading,
+    syncChatHistoryWithCloud
+  };
+
+  return <ChatbotContext.Provider value={value}>{children}</ChatbotContext.Provider>;
 };
 
 ChatbotProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+// Custom hook
 export const useChatbot = () => {
   const context = useContext(ChatbotContext);
   
@@ -218,3 +185,5 @@ export const useChatbot = () => {
   
   return context;
 };
+
+export default ChatbotContext;

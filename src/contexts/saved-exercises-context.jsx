@@ -1,56 +1,39 @@
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
-import { syncUserData, fetchUserData } from "../services/user-data-service";
+import { syncUserData, syncUserDataDeletion, fetchUserData, getFromLocalStorage } from "../services/user-data-service";
 
-// Create saved exercises context
-const SavedExercisesContext = createContext({
-  savedExercises: [],
-  addSavedExercise: () => {},
-  removeSavedExercise: () => {},
-  isSaved: () => false,
-  isLoading: false,
-  syncSavedExercisesWithCloud: () => {},
-});
+// Create context
+const SavedExercisesContext = createContext({});
 
+// Provider component
 export const SavedExercisesProvider = ({ children }) => {
   const [savedExercises, setSavedExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
-  // Load saved exercises from localStorage or cloud on initial render
+  // Load saved exercises on mount
   useEffect(() => {
     const loadSavedExercises = async () => {
       try {
         setIsLoading(true);
-
-        if (isAuthenticated) {
-          // Try to fetch from cloud first
-          const result = await fetchUserData();
-          if (result.success && result.data.savedExercises && result.data.savedExercises.length > 0) {
-            setSavedExercises(result.data.savedExercises);
-            console.log("Loaded saved exercises from cloud:", result.data.savedExercises.length);
-            // Also update localStorage as backup
-            localStorage.setItem("savedExercises_data", JSON.stringify(result.data.savedExercises));
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // Fallback to localStorage
-        const storedExercises = localStorage.getItem("savedExercises_data");
         
-        if (storedExercises) {
-          const parsedExercises = JSON.parse(storedExercises);
-          setSavedExercises(parsedExercises);
-          console.log("Loaded saved exercises from local storage:", parsedExercises.length);
+        // 1. First try from localStorage for immediate display
+        const localExercises = getFromLocalStorage("savedExercises_data", []);
+        if (localExercises.length > 0) {
+          setSavedExercises(localExercises);
+        }
+        
+        // 2. If authenticated, try to get from server
+        if (isAuthenticated) {
+          const result = await fetchUserData();
           
-          // If authenticated but cloud data was empty, sync localStorage data to cloud
-          if (isAuthenticated && parsedExercises.length > 0) {
-            syncUserData("savedExercises", parsedExercises);
+          if (result.success && result.data?.savedExercises?.length > 0) {
+            setSavedExercises(result.data.savedExercises);
+          } else if (localExercises.length > 0) {
+            // 3. If server has no data but we have local data, sync to server
+            await syncUserData("savedExercises", localExercises);
           }
-        } else {
-          setSavedExercises([]);
         }
       } catch (error) {
         console.error("Error loading saved exercises:", error);
@@ -62,70 +45,66 @@ export const SavedExercisesProvider = ({ children }) => {
     loadSavedExercises();
   }, [isAuthenticated]);
 
-  // Sync saved exercises to cloud when authenticated and exercises change
+  // Sync when saved exercises change
   useEffect(() => {
-    const syncToCloud = async () => {
-      if (isAuthenticated && !isLoading) {
-        try {
-          await syncUserData("savedExercises", savedExercises);
-          console.log("Synced saved exercises to cloud:", savedExercises.length);
-        } catch (error) {
-          console.error("Error syncing saved exercises to cloud:", error);
-        }
+    const syncExercises = async () => {
+      if (isAuthenticated && savedExercises.length > 0) {
+        await syncUserData("savedExercises", savedExercises);
       }
     };
-
-    // Only sync if not in initial loading state
+    
+    // Skip initial sync
     if (!isLoading) {
-      syncToCloud();
+      syncExercises();
     }
   }, [savedExercises, isAuthenticated, isLoading]);
 
-  // Add a new saved exercise
+  // Add a saved exercise
   const addSavedExercise = (exerciseData) => {
-    if (!exerciseData.id) {
-      console.error("Exercise data missing ID");
+    if (!exerciseData?.id) {
+      console.error("Invalid exercise data");
       return false;
     }
-
+    
     // Check if already saved
     if (savedExercises.some(ex => ex.id === exerciseData.id)) {
       console.log("Exercise already saved");
       return false;
     }
-
-    console.log("Adding saved exercise:", exerciseData);
     
-    setSavedExercises(prevExercises => {
-      const updatedExercises = [...prevExercises, exerciseData];
-      
-      // Also update in localStorage immediately
-      try {
-        localStorage.setItem("savedExercises_data", JSON.stringify(updatedExercises));
-      } catch (error) {
-        console.error("Error saving to localStorage:", error);
-      }
-      
-      return updatedExercises;
-    });
-    
+    setSavedExercises(prev => [...prev, exerciseData]);
     return true;
   };
 
   // Remove a saved exercise
   const removeSavedExercise = (exerciseId) => {
-    setSavedExercises(prevExercises => {
-      const updatedExercises = prevExercises.filter(ex => ex.id !== exerciseId);
-      
-      // Update in localStorage
-      try {
-        localStorage.setItem("savedExercises_data", JSON.stringify(updatedExercises));
-      } catch (error) {
-        console.error("Error updating localStorage:", error);
-      }
-      
-      return updatedExercises;
-    });
+    if (!exerciseId) return false;
+    
+    // Filter out the removed exercise
+    const updatedExercises = savedExercises.filter(ex => ex.id !== exerciseId);
+    
+    // Update local state
+    setSavedExercises(updatedExercises);
+    
+    // Sync with server if authenticated - use the deletion sync function
+    if (isAuthenticated) {
+      syncUserDataDeletion("savedExercises", updatedExercises)
+        .catch(err => console.error("Error syncing saved exercise deletion:", err));
+    }
+    
+    return true;
+  };
+
+  // Remove all saved exercises
+  const removeAllSavedExercises = () => {
+    // Clear local state
+    setSavedExercises([]);
+    
+    // Sync empty array with server if authenticated
+    if (isAuthenticated) {
+      syncUserDataDeletion("savedExercises", [])
+        .catch(err => console.error("Error syncing all saved exercises deletion:", err));
+    }
     
     return true;
   };
@@ -138,36 +117,38 @@ export const SavedExercisesProvider = ({ children }) => {
   // Manual sync function
   const syncSavedExercisesWithCloud = async () => {
     if (!isAuthenticated) return false;
-
+    
     try {
+      setIsLoading(true);
       const result = await syncUserData("savedExercises", savedExercises);
       return result.success;
     } catch (error) {
-      console.error("Error in manual sync:", error);
+      console.error("Error syncing saved exercises:", error);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <SavedExercisesContext.Provider
-      value={{
-        savedExercises,
-        addSavedExercise,
-        removeSavedExercise,
-        isSaved,
-        isLoading,
-        syncSavedExercisesWithCloud
-      }}
-    >
-      {children}
-    </SavedExercisesContext.Provider>
-  );
+  // Context value
+  const value = {
+    savedExercises,
+    addSavedExercise,
+    removeSavedExercise,
+    removeAllSavedExercises,
+    isSaved,
+    isLoading,
+    syncSavedExercisesWithCloud
+  };
+
+  return <SavedExercisesContext.Provider value={value}>{children}</SavedExercisesContext.Provider>;
 };
 
 SavedExercisesProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+// Custom hook
 export const useSavedExercises = () => {
   const context = useContext(SavedExercisesContext);
   
@@ -177,3 +158,5 @@ export const useSavedExercises = () => {
   
   return context;
 };
+
+export default SavedExercisesContext;

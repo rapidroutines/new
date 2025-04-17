@@ -1,69 +1,39 @@
-import { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 
-// Create the auth context with default values
-const AuthContext = createContext({
-    user: null,
-    isAuthenticated: false,
-    login: () => {},
-    signup: () => {},
-    logout: () => {},
-    isLoading: true,
-    forgotPassword: () => {},
-    resetPassword: () => {},
-    updateProfile: () => {},
-    error: null,
-    setError: () => {},
-});
+// Create context
+const AuthContext = createContext({});
 
+// Provider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Helper to handle common error responses
-    const handleError = useCallback((err) => {
-        console.error("Auth error:", err);
-        if (err.response && err.response.data && err.response.data.message) {
-            setError(err.response.data.message);
-        } else if (err.message) {
-            setError(err.message);
-        } else {
-            setError("An unknown error occurred. Please try again.");
-        }
-        return false;
-    }, []);
-
-    // Set up axios defaults and interceptors
+    // Set up axios defaults - don't add "/api" here
     useEffect(() => {
-        // Configure axios defaults
-        axios.defaults.baseURL = `${window.location.origin}/api`;
+        axios.defaults.baseURL = window.location.origin;
         
-        // Add axios interceptor to handle expired tokens
+        // Add interceptor to handle 401s
         const interceptor = axios.interceptors.response.use(
             response => response,
             error => {
-                if (error.response && error.response.status === 401) {
-                    // If we get a 401, clear the token and log the user out
+                if (error.response?.status === 401) {
                     localStorage.removeItem("token");
                     delete axios.defaults.headers.common["Authorization"];
                     setUser(null);
                     setIsAuthenticated(false);
-                    setError("Your session has expired. Please log in again.");
                 }
                 return Promise.reject(error);
             }
         );
         
-        return () => {
-            // Clean up interceptor on unmount
-            axios.interceptors.response.eject(interceptor);
-        };
+        return () => axios.interceptors.response.eject(interceptor);
     }, []);
 
-    // Load user from token on initial render
+    // Load user from token
     useEffect(() => {
         const loadUser = async () => {
             try {
@@ -78,10 +48,10 @@ export const AuthProvider = ({ children }) => {
                 // Set auth header
                 axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
                 
-                // Verify token and get user data
+                // Get user data
                 const res = await axios.get("/api/auth/user");
                 
-                if (res.data && res.data.user) {
+                if (res.data?.user) {
                     setUser(res.data.user);
                     setIsAuthenticated(true);
                 }
@@ -97,7 +67,7 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
-    // Login user
+    // Login
     const login = async (email, password) => {
         try {
             setError(null);
@@ -105,7 +75,7 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.post("/api/auth/login", { email, password });
             
-            if (res.data && res.data.token) {
+            if (res.data?.token) {
                 localStorage.setItem("token", res.data.token);
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
                 setUser(res.data.user);
@@ -115,13 +85,14 @@ export const AuthProvider = ({ children }) => {
             
             return false;
         } catch (err) {
-            return handleError(err);
+            setError(err.response?.data?.message || "Login failed");
+            return false;
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Register user
+    // Signup
     const signup = async (name, email, password) => {
         try {
             setError(null);
@@ -129,7 +100,7 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.post("/api/auth/register", { name, email, password });
             
-            if (res.data && res.data.token) {
+            if (res.data?.token) {
                 localStorage.setItem("token", res.data.token);
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
                 setUser(res.data.user);
@@ -139,13 +110,14 @@ export const AuthProvider = ({ children }) => {
             
             return false;
         } catch (err) {
-            return handleError(err);
+            setError(err.response?.data?.message || "Registration failed");
+            return false;
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Update user profile
+    // Update profile
     const updateProfile = async (userData) => {
         try {
             setError(null);
@@ -153,14 +125,15 @@ export const AuthProvider = ({ children }) => {
             
             const res = await axios.put("/api/auth/update-profile", userData);
             
-            if (res.data && res.data.user) {
+            if (res.data?.user) {
                 setUser(res.data.user);
                 return true;
             }
             
             return false;
         } catch (err) {
-            return handleError(err);
+            setError(err.response?.data?.message || "Profile update failed");
+            return false;
         } finally {
             setIsLoading(false);
         }
@@ -175,7 +148,8 @@ export const AuthProvider = ({ children }) => {
             await axios.post("/api/auth/forgot-password", { email });
             return true;
         } catch (err) {
-            return handleError(err);
+            setError(err.response?.data?.message || "Error sending reset email");
+            return false;
         } finally {
             setIsLoading(false);
         }
@@ -190,46 +164,44 @@ export const AuthProvider = ({ children }) => {
             await axios.post("/api/auth/reset-password", { token, password });
             return true;
         } catch (err) {
-            return handleError(err);
+            setError(err.response?.data?.message || "Password reset failed");
+            return false;
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Logout user
+    // Logout
     const logout = () => {
         localStorage.removeItem("token");
         delete axios.defaults.headers.common["Authorization"];
         setUser(null);
         setIsAuthenticated(false);
-        setError(null);
     };
 
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                isAuthenticated,
-                isLoading,
-                login,
-                signup,
-                logout,
-                forgotPassword,
-                resetPassword,
-                updateProfile,
-                error,
-                setError,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+    // Auth context values
+    const value = {
+        user,
+        isAuthenticated,
+        isLoading,
+        error,
+        setError,
+        login,
+        signup,
+        logout,
+        forgotPassword,
+        resetPassword,
+        updateProfile
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 AuthProvider.propTypes = {
     children: PropTypes.node.isRequired,
 };
 
+// Custom hook for using the auth context
 export const useAuth = () => {
     const context = useContext(AuthContext);
     
@@ -239,3 +211,5 @@ export const useAuth = () => {
     
     return context;
 };
+
+export default AuthContext;

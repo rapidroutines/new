@@ -1,5 +1,5 @@
 import { useExercises } from "@/contexts/exercise-context";
-import { DumbbellIcon, Calendar, Activity, ChevronRight, RefreshCw, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { DumbbellIcon, Calendar, RefreshCw, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export const ExerciseLog = ({ maxItems = 5 }) => {
@@ -255,7 +255,6 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
                             className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
                         >
                             {expandedView ? "Show Less" : "View All"}
-                            <ChevronRight className="h-4 w-4" strokeWidth={2} />
                         </button>
                     )}
                 </div>
@@ -264,10 +263,8 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
             <div className="space-y-4">
                 {groupedExercises.map((group) => (
                     <div key={group.id} className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-b-0">
-                        <div className={`rounded-full p-2 ${getExerciseColor(group.exerciseType)}`}>
-                            <Activity className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
+                        {/* Removed the icon and left padding here to give more space to the exercise name/data */}
+                        <div className="flex-1 pl-2">
                             <div className="flex flex-wrap items-baseline justify-between gap-2">
                                 <p className="font-medium">
                                     x{group.totalReps} {formatExerciseType(group.exerciseType)}

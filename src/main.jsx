@@ -8,22 +8,18 @@ import { ExerciseProvider } from '@/contexts/exercise-context'
 import { ChatbotProvider } from '@/contexts/chatbot-context'
 import { SavedExercisesProvider } from '@/contexts/saved-exercises-context'
 
-// Initialize axios with default baseURL
-import axios from 'axios'
-axios.defaults.baseURL = `${window.location.origin}/api`
-
 // Create a root provider component to wrap all providers
 const RootProvider = ({ children }) => (
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <ExerciseProvider>
-          <ChatbotProvider>
-            <SavedExercisesProvider>
+        <SavedExercisesProvider>
+          <ExerciseProvider>
+            <ChatbotProvider>
               {children}
-            </SavedExercisesProvider>
-          </ChatbotProvider>
-        </ExerciseProvider>
+            </ChatbotProvider>
+          </ExerciseProvider>
+        </SavedExercisesProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>
@@ -33,4 +29,4 @@ createRoot(document.getElementById('root')).render(
   <RootProvider>
     <App />
   </RootProvider>
-) 
+)
