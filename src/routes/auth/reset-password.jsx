@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
-import { Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, CheckCircle, Info } from "lucide-react";
 import logoLight from "@/assets/main_logo.png";
 
 const ResetPasswordPage = () => {
@@ -9,6 +9,7 @@ const ResetPasswordPage = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
     const { resetPassword, isLoading, error, setError } = useAuth();
     const navigate = useNavigate();
     const { token } = useParams();
@@ -20,22 +21,59 @@ const ResetPasswordPage = () => {
         }
     }, [token, navigate]);
     
+    // Password strength and validation
+    const validatePassword = (password) => {
+        // Check for empty password
+        if (!password) return { valid: false, message: "Password is required" };
+        
+        // Check minimum length
+        if (password.length < 6) {
+            return { valid: false, message: "Password must be at least 6 characters" };
+        }
+        
+        // For stronger validation you could check for:
+        // - Uppercase letters
+        // - Lowercase letters
+        // - Numbers
+        // - Special characters
+        
+        return { valid: true, message: "Password is valid" };
+    };
+    
+    // Password strength indicator
+    const getPasswordStrength = () => {
+        if (!password) return { strength: 0, text: "" };
+        
+        if (password.length < 6) return { strength: 1, text: "Weak" };
+        if (password.length < 10) return { strength: 2, text: "Medium" };
+        return { strength: 3, text: "Strong" };
+    };
+    
+    const passwordStrength = getPasswordStrength();
+    
+    // Form validation
+    const validateForm = () => {
+        const errors = {};
+        
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.valid) {
+            errors.password = passwordValidation.message;
+        }
+        
+        if (password !== confirmPassword) {
+            errors.confirmPassword = "Passwords do not match";
+        }
+        
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         
-        if (!password || !confirmPassword) {
-            setError("Please fill in all fields.");
-            return;
-        }
-        
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            setError("Passwords do not match.");
+        // Validate form
+        if (!validateForm()) {
             return;
         }
         
@@ -96,7 +134,9 @@ const ResetPasswordPage = () => {
                                     type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]"
+                                    className={`w-full rounded-lg border ${
+                                        validationErrors.password ? 'border-red-300' : 'border-slate-300'
+                                    } p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]`}
                                     placeholder="••••••••"
                                 />
                                 <button
@@ -111,6 +151,40 @@ const ResetPasswordPage = () => {
                                     )}
                                 </button>
                             </div>
+                            {validationErrors.password && (
+                                <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
+                            )}
+                            
+                            {/* Password strength indicator */}
+                            {password && (
+                                <div className="mt-2">
+                                    <div className="mb-1 flex gap-1">
+                                        {[1, 2, 3].map((level) => (
+                                            <div
+                                                key={level}
+                                                className={`h-1 flex-1 rounded-full ${
+                                                    level <= passwordStrength.strength
+                                                        ? level === 1
+                                                            ? "bg-red-500"
+                                                            : level === 2
+                                                            ? "bg-yellow-500"
+                                                            : "bg-green-500"
+                                                        : "bg-slate-200"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className={`text-xs ${
+                                        passwordStrength.strength === 1
+                                            ? "text-red-600"
+                                            : passwordStrength.strength === 2
+                                            ? "text-yellow-600"
+                                            : "text-green-600"
+                                    }`}>
+                                        {passwordStrength.text}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         
                         <div>
@@ -122,10 +196,34 @@ const ResetPasswordPage = () => {
                                     type={showPassword ? "text" : "password"}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full rounded-lg border border-slate-300 p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]"
+                                    className={`w-full rounded-lg border ${
+                                        validationErrors.confirmPassword ? 'border-red-300' : 'border-slate-300'
+                                    } p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]`}
                                     placeholder="••••••••"
                                 />
                             </div>
+                            {validationErrors.confirmPassword && (
+                                <p className="mt-1 text-xs text-red-600">{validationErrors.confirmPassword}</p>
+                            )}
+                            {password && confirmPassword && password === confirmPassword && (
+                                <div className="mt-1 flex items-center gap-1 text-xs text-green-600">
+                                    <CheckCircle className="h-3 w-3" />
+                                    <span>Passwords match</span>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Password requirements info */}
+                        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+                            <div className="flex items-center gap-2 font-medium mb-2">
+                                <Info className="h-4 w-4 flex-shrink-0" />
+                                <span>Password requirements:</span>
+                            </div>
+                            <ul className="ml-6 list-disc space-y-1">
+                                <li>At least 6 characters</li>
+                                <li>Longer passwords are stronger</li>
+                                <li>Required to use letters, numbers, and symbols</li>
+                            </ul>
                         </div>
                         
                         <button

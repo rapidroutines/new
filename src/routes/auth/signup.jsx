@@ -326,7 +326,7 @@ const SignupPage = () => {
                     <ul className="ml-6 list-disc space-y-1">
                         <li>At least 6 characters</li>
                         <li>Longer passwords are stronger</li>
-                        <li>Consider using a mix of letters, numbers, and symbols</li>
+                        <li>Required to use letters, numbers, and symbols</li>
                     </ul>
                 </div>
             </div>
