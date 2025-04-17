@@ -484,7 +484,6 @@ const RapidTreePage = () => {
     return (
         <div className="flex flex-col gap-y-6">
             <div className="flex justify-between items-center">
-                <h1 className="title">RapidTree Progression</h1>
                 <button 
                     onClick={resetAllExercises}
                     className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600"
