@@ -498,10 +498,11 @@ const handleSaveToggle = (e, exercise) => {
 
     return (
         <div className="flex flex-col gap-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
+
                 
                 {/* Search input */}
-                <div className="relative w-full">
+                <div className="relative w-full max-w-sm">
                     <div className="flex h-10 w-full items-center overflow-hidden rounded-md border border-slate-300 bg-white">
                         <div className="flex h-full items-center justify-center px-3">
                             <Search className="h-4 w-4 text-slate-500" />
