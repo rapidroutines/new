@@ -1,3 +1,4 @@
+// src/contexts/exercise-context.jsx
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
@@ -34,26 +35,34 @@ export const ExerciseProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const addExercise = async (exerciseData) => {
-    if (!isAuthenticated) return false;
+    // Create a unique ID for this exercise
+    const newExercise = {
+      id: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      ...exerciseData
+    };
+    
+    if (isAuthenticated) {
+      try {
+        // Add the new exercise to the existing list
+        const updatedExercises = [...exercises, newExercise];
+        
+        // Save to server
+        await axios.post("/api/user-data/save-data", {
+          dataType: "exerciseLog",
+          data: updatedExercises
+        });
 
-    try {
-      const newExercise = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        ...exerciseData
-      };
-      
-      const updatedExercises = [...exercises, newExercise];
-      
-      await axios.post("/api/user-data/save-data", {
-        dataType: "exerciseLog",
-        data: updatedExercises
-      });
-
-      setExercises(updatedExercises);
-      return true;
-    } catch (error) {
-      console.error("Error saving exercise:", error);
+        // Update local state
+        setExercises(updatedExercises);
+        return true;
+      } catch (error) {
+        console.error("Error saving exercise:", error);
+        return false;
+      }
+    } else {
+      // If not authenticated, we won't save the data
+      console.log("Exercise not saved: User not authenticated");
       return false;
     }
   };
