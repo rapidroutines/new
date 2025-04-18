@@ -16,7 +16,7 @@ router.post('/save-data', auth, async (req, res) => {
     }
 
     // Allowed data types
-    const allowedTypes = ['savedExercises', 'exerciseLog', 'chatHistory'];
+    const allowedTypes = ['savedExercises', 'exerciseLog', 'chatHistory', 'rapidTreeProgress'];
     if (!allowedTypes.includes(dataType)) {
         return res.status(400).json({ message: 'Invalid data type' });
     }
@@ -77,14 +77,16 @@ router.get('/get-data', auth, async (req, res) => {
             return res.status(200).json({
                 savedExercises: [],
                 exerciseLog: [],
-                chatHistory: []
+                chatHistory: [],
+                rapidTreeProgress: {}
             });
         }
 
         res.status(200).json({
             savedExercises: userData.savedExercises || [],
             exerciseLog: userData.exerciseLog || [],
-            chatHistory: userData.chatHistory || []
+            chatHistory: userData.chatHistory || [],
+            rapidTreeProgress: userData.rapidTreeProgress || {}
         });
     } catch (err) {
         console.error('Error retrieving user data:', err);
