@@ -4,7 +4,6 @@ import { X, Info, CheckCircle, Lock, RefreshCw } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useRapidTree } from "@/contexts/rapidtree-context";
 import { useAuth } from "@/contexts/auth-context";
-import { LimitedFunctionalityBanner } from "@/components/limited-functionality-banner";
 
 const initializeExerciseCategories = () => {
     const categories = {
