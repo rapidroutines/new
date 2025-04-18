@@ -570,14 +570,7 @@ const RapidTreePage = ({ limited = false }) => {
                 </div>
             )}
 
-            {!isAuthenticated && (
-                <div className="w-full rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-800">
-                    <div className="flex items-center gap-2">
-                        <Info className="h-5 w-5 flex-shrink-0" />
-                        <p>Sign in to save your progress and track your exercise journey. Your progress will not be saved in this session.</p>
-                    </div>
-                </div>
-            )}
+           
         
             <div className="flex justify-end items-center">
                 <button 
