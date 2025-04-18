@@ -549,8 +549,7 @@ const RapidTreePage = ({ limited = false }) => {
 
     return (
         <div className="flex flex-col gap-y-6">
-            {limited && !isAuthenticated && (
-            )}
+          
             
             {notification && (
                 <div 
