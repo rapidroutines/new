@@ -204,10 +204,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     
     return (
         <div className="rounded-xl bg-white p-6 shadow-md">
-            {limited && !isAuthenticated && (
-                <div className="mb-4">
-                </div>
-            )}
+           
             
             {notification && (
                 <div 
