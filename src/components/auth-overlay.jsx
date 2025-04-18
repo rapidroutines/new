@@ -1,6 +1,7 @@
+// src/components/auth-overlay.jsx
 import { Link } from "react-router-dom";
 import { Lock, UserPlus, LogIn } from "lucide-react";
-import PropTypes from "prop-types";
+import PropTypes from "prop-types"; // Make sure PropTypes is imported
 
 export const AuthOverlay = ({ title = "Dashboard" }) => {
   return (
