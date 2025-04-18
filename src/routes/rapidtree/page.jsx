@@ -242,35 +242,35 @@ const RapidTreePage = ({ limited = false }) => {
     };
 
     const completeExercise = (category, exerciseId) => {
-        if (limited && !isAuthenticated) {
-            showNotification("warning", "Sign in to save your progress");
-            setSelectedExercise(null);
-            return;
-        }
-        
-        const updatedExercises = {...exercises};
-        const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
-
-        if (index === -1 || updatedExercises[category][index].isCompleted) return;
-
-        updatedExercises[category][index].isCompleted = true;
-
-        if (index + 1 < updatedExercises[category].length) {
-            updatedExercises[category][index + 1].isLocked = false;
-        }
-
-        setExercises(updatedExercises);
+      if (!isAuthenticated) {
+        showNotification("warning", "Sign in to save your progress");
         setSelectedExercise(null);
-        saveProgress();
-        showNotification("success", "Exercise completed and progress saved!");
+        return;
+      }
+  
+      const updatedExercises = {...exercises};
+      const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
+
+      if (index === -1 || updatedExercises[category][index].isCompleted) return;
+
+      updatedExercises[category][index].isCompleted = true;
+
+      if (index + 1 < updatedExercises[category].length) {
+        updatedExercises[category][index + 1].isLocked = false;
+      }
+
+      setExercises(updatedExercises);
+      setSelectedExercise(null);
+      saveProgress();
+      showNotification("success", "Exercise completed and progress saved!");
     };
 
     const resetExercise = (category, exerciseId) => {
-        if (limited && !isAuthenticated) {
-            showNotification("warning", "Sign in to modify your progress");
-            setSelectedExercise(null);
-            return;
-        }
+      if (!isAuthenticated) {
+        showNotification("warning", "Sign in to modify your progress");
+        setSelectedExercise(null);
+        return;
+      }
         
         const updatedExercises = {...exercises};
         const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
@@ -317,10 +317,10 @@ const RapidTreePage = ({ limited = false }) => {
     };
 
     const resetAllExercises = async () => {
-        if (limited && !isAuthenticated) {
-            showNotification("warning", "Sign in to reset all progress");
-            return;
-        }
+      if (!isAuthenticated) {
+        showNotification("warning", "Sign in to reset all progress");
+        return;
+      }
         
         if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
             const freshExercises = initializeExerciseCategories();
@@ -573,16 +573,28 @@ const RapidTreePage = ({ limited = false }) => {
                     </div>
                 </div>
             )}
+
+            {!isAuthenticated && (
+                <div className="w-full rounded-lg bg-amber-50 border border-amber-200 p-4 text-amber-800">
+                    <div className="flex items-center gap-2">
+                        <Info className="h-5 w-5 flex-shrink-0" />
+                        <p>Sign in to save your progress and track your exercise journey. Your progress will not be saved in this session.</p>
+                    </div>
+                </div>
+            )}
             
             <div className="flex justify-end items-center">
                 <button 
-                    onClick={resetAllExercises}
-                    className="flex items-center gap-1 rounded-lg bg-red-500 px-3 py-2 text-sm font-medium text-white hover:bg-red-600"
-                    title="Reset all progress"
+                  onClick={resetAllExercises}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium ${
+                    isAuthenticated 
+                        ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer" 
+                        : "bg-red-300 text-white cursor-not-allowed"
+                  }`}
+                  title={isAuthenticated ? "Reset all progress" : "Sign in to reset progress"}
                 >
-                    <RefreshCw className="h-4 w-4" /> Reset All
+                  <RefreshCw className="h-4 w-4" /> Reset All
                 </button>
-            </div>
 
             <div className="w-full rounded-lg bg-slate-100 p-4 shadow-sm">
                 <div className="flex w-full flex-col items-center justify-center">
