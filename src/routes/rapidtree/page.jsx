@@ -549,16 +549,12 @@ const RapidTreePage = ({ limited = false }) => {
 
     return (
         <div className="flex flex-col gap-y-6">
-          
-            
             {notification && (
-                <div 
-                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
-                        notification.type === "success" ? "bg-green-100 text-green-800" : 
-                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
-                        "bg-red-100 text-red-800"
-                    }`}
-                >
+                <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                    notification.type === "success" ? "bg-green-100 text-green-800" : 
+                    notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                    "bg-red-100 text-red-800"
+                }`}>
                     <div className="flex items-center">
                         {notification.type === "success" ? (
                             <div className="mr-2 rounded-full bg-green-200 p-1">
@@ -582,19 +578,20 @@ const RapidTreePage = ({ limited = false }) => {
                     </div>
                 </div>
             )}
-            
+        
             <div className="flex justify-end items-center">
                 <button 
-                  onClick={resetAllExercises}
-                  className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium ${
+                    onClick={resetAllExercises}
+                    className={`flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium ${
                     isAuthenticated 
                         ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer" 
                         : "bg-red-300 text-white cursor-not-allowed"
-                  }`}
-                  title={isAuthenticated ? "Reset all progress" : "Sign in to reset progress"}
+                    }`}
+                    title={isAuthenticated ? "Reset all progress" : "Sign in to reset progress"}
                 >
-                  <RefreshCw className="h-4 w-4" /> Reset All
+                    <RefreshCw className="h-4 w-4" /> Reset All
                 </button>
+            </div>
 
             <div className="w-full rounded-lg bg-slate-100 p-4 shadow-sm">
                 <div className="flex w-full flex-col items-center justify-center">
