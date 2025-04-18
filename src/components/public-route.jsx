@@ -1,6 +1,7 @@
+// Fix for PublicRoute.jsx
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
-import PropTypes from "prop-types";
+import PropTypes from "prop-types"; // Make sure PropTypes is imported
 import Layout from "@/routes/layout";
 
 export const PublicRoute = ({ children }) => {
