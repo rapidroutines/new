@@ -1,4 +1,3 @@
-// src/routes/repbot/page.jsx
 import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { useExercises } from "@/contexts/exercise-context";
@@ -37,7 +36,8 @@ const RepBotPage = () => {
                 // Mark this message as processed
                 processedMessages.current.add(messageId);
                 
-                // Log the exercise directly to the user's account
+                // Log the exercise exactly as received from the RepBot
+                // This preserves the exact rep count
                 addExercise({
                     exerciseType: exerciseType,
                     count: repCount,
@@ -56,10 +56,60 @@ const RepBotPage = () => {
             window.removeEventListener("message", handleMessage);
         };
     }, [addExercise]);
+    
+    // Handle exercises saved to localStorage by the iframe
+    useEffect(() => {
+        const processedStorageItems = new Set();
+        
+        const checkLocalStorageForExercises = () => {
+            try {
+                const repbotExerciseKey = "repbot_lastExercise";
+                const storedExercise = localStorage.getItem(repbotExerciseKey);
+                
+                if (storedExercise) {
+                    const exerciseData = JSON.parse(storedExercise);
+                    
+                    const storageId = `${exerciseData.type}-${exerciseData.count}-${exerciseData.timestamp}`;
+                    
+                    if (processedStorageItems.has(storageId)) {
+                        return;
+                    }
+                    
+                    if (!exerciseData.processed) {
+                        // Log the exercise directly with the exact rep count
+                        addExercise({
+                            exerciseType: exerciseData.type,
+                            count: exerciseData.count,
+                            timestamp: exerciseData.timestamp 
+                                ? new Date(exerciseData.timestamp).toISOString() 
+                                : new Date().toISOString()
+                        });
+                        
+                        // Mark as processed in localStorage
+                        localStorage.setItem(repbotExerciseKey, JSON.stringify({
+                            ...exerciseData,
+                            processed: true
+                        }));
+                        
+                        processedStorageItems.add(storageId);
+                        console.log(`Exercise from localStorage logged: ${exerciseData.type}, ${exerciseData.count} reps`);
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking localStorage for exercises:", error);
+            }
+        };
+        
+        const interval = setInterval(checkLocalStorageForExercises, 2000);
+        
+        checkLocalStorageForExercises();
+        
+        return () => clearInterval(interval);
+    }, [addExercise]);
 
     return (
-        <div className="flex flex-col min-h-screen overflow-hidden">
-            <div className="relative flex-1 w-full bg-white dark:bg-slate-950 rounded-lg shadow-sm" style={{ minHeight: "600px", overflow: "hidden" }}>
+        <div className="flex flex-col h-[calc(100vh-80px)]">
+            <div className="relative flex-1 w-full overflow-hidden bg-white dark:bg-slate-950 rounded-lg shadow-sm" style={{ minHeight: "600px" }}>
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-10">
                         <div className="flex flex-col items-center text-center">
@@ -83,7 +133,7 @@ const RepBotPage = () => {
             </div>
             
             <div className="text-center text-sm text-slate-600 mt-3 mb-2">
-                <p>Your exercises are automatically saved as you complete them if you are signed in.</p>
+                <p>Your exercises are automatically saved as you complete reps if you are signed in.</p>
             </div>
             
             <Footer />
