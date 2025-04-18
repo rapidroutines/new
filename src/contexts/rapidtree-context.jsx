@@ -13,18 +13,8 @@ export const RapidTreeProvider = ({ children }) => {
   useEffect(() => {
     const fetchTreeProgress = async () => {
       if (!isAuthenticated) {
-        // If not authenticated, load from localStorage as fallback
-        const savedProgress = localStorage.getItem('rapidTreeProgress');
-        if (savedProgress) {
-          try {
-            setTreeProgress(JSON.parse(savedProgress));
-          } catch (error) {
-            console.error('Error parsing saved progress from localStorage:', error);
-            setTreeProgress({});
-          }
-        } else {
-          setTreeProgress({});
-        }
+        // If not authenticated, initialize with empty progress
+        setTreeProgress({});
         setIsLoading(false);
         return;
       }
@@ -38,38 +28,12 @@ export const RapidTreeProvider = ({ children }) => {
         if (userData.rapidTreeProgress) {
           setTreeProgress(userData.rapidTreeProgress);
         } else {
-          // If not, initialize from localStorage if available
-          const savedProgress = localStorage.getItem('rapidTreeProgress');
-          if (savedProgress) {
-            try {
-              const parsedProgress = JSON.parse(savedProgress);
-              setTreeProgress(parsedProgress);
-              
-              // Save the localStorage data to the server
-              await saveProgressToServer(parsedProgress);
-            } catch (error) {
-              console.error('Error parsing saved progress:', error);
-              setTreeProgress({});
-            }
-          } else {
-            setTreeProgress({});
-          }
+          // If not, initialize with empty progress
+          setTreeProgress({});
         }
       } catch (error) {
         console.error("Error fetching RapidTree progress:", error);
-        
-        // Fallback to localStorage
-        const savedProgress = localStorage.getItem('rapidTreeProgress');
-        if (savedProgress) {
-          try {
-            setTreeProgress(JSON.parse(savedProgress));
-          } catch (error) {
-            console.error('Error parsing saved progress from localStorage:', error);
-            setTreeProgress({});
-          }
-        } else {
-          setTreeProgress({});
-        }
+        setTreeProgress({});
       } finally {
         setIsLoading(false);
       }
@@ -94,14 +58,13 @@ export const RapidTreeProvider = ({ children }) => {
   };
 
   const updateTreeProgress = async (newProgress) => {
-    setTreeProgress(newProgress);
-    
-    // Save to localStorage as backup
-    localStorage.setItem('rapidTreeProgress', JSON.stringify(newProgress));
-    
-    // If authenticated, save to server
+    // Only update state and save to server if authenticated
     if (isAuthenticated) {
+      setTreeProgress(newProgress);
       return await saveProgressToServer(newProgress);
+    } else {
+      // For non-authenticated users, just update the state without persistence
+      setTreeProgress(newProgress);
     }
     
     return true;
@@ -110,9 +73,6 @@ export const RapidTreeProvider = ({ children }) => {
   const resetTreeProgress = async () => {
     const emptyProgress = {};
     setTreeProgress(emptyProgress);
-    
-    // Clear from localStorage
-    localStorage.removeItem('rapidTreeProgress');
     
     // If authenticated, save empty progress to server
     if (isAuthenticated) {
