@@ -15,8 +15,8 @@ router.post('/save-data', auth, async (req, res) => {
         return res.status(400).json({ message: 'Data type and content are required' });
     }
 
-    // Allowed data types
-    const allowedTypes = ['savedExercises', 'exerciseLog', 'chatHistory', 'rapidTreeProgress'];
+    // Allowed data types - adding trackerExercises to the allowed types
+    const allowedTypes = ['savedExercises', 'exerciseLog', 'chatHistory', 'rapidTreeProgress', 'trackerExercises'];
     if (!allowedTypes.includes(dataType)) {
         return res.status(400).json({ message: 'Invalid data type' });
     }
@@ -78,7 +78,8 @@ router.get('/get-data', auth, async (req, res) => {
                 savedExercises: [],
                 exerciseLog: [],
                 chatHistory: [],
-                rapidTreeProgress: {}
+                rapidTreeProgress: {},
+                trackerExercises: [] // Adding empty trackerExercises array as default
             });
         }
 
@@ -86,7 +87,8 @@ router.get('/get-data', auth, async (req, res) => {
             savedExercises: userData.savedExercises || [],
             exerciseLog: userData.exerciseLog || [],
             chatHistory: userData.chatHistory || [],
-            rapidTreeProgress: userData.rapidTreeProgress || {}
+            rapidTreeProgress: userData.rapidTreeProgress || {},
+            trackerExercises: userData.trackerExercises || [] // Include trackerExercises in response
         });
     } catch (err) {
         console.error('Error retrieving user data:', err);
