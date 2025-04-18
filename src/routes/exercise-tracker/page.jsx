@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Footer } from "@/layouts/footer";
 import { useAuth } from "@/contexts/auth-context";
 import axios from "axios";
-import { AuthOverlay } from "@/components/auth-overlay";
 
 const ExerciseTrackerPage = ({ limited = false }) => {
     const [isLoading, setIsLoading] = useState(true);
@@ -126,8 +125,6 @@ const ExerciseTrackerPage = ({ limited = false }) => {
     
     return (
         <div className="flex flex-col min-h-screen">
-            {!isAuthenticated && limited && <AuthOverlay title="Exercise Tracker" />}
-            
             <div className="flex-grow flex flex-col gap-y-4 p-0 md:p-2">
                 <div className="relative rounded-lg shadow-sm overflow-hidden flex-grow h-[calc(100vh-120px)]">
                     {isLoading && (
