@@ -19,6 +19,10 @@ const UserDataSchema = new mongoose.Schema({
         type: [mongoose.Schema.Types.Mixed],
         default: []
     },
+    rapidTreeProgress: {
+        type: mongoose.Schema.Types.Mixed,
+        default: {}
+    },
     createdAt: {
         type: Date,
         default: Date.now
