@@ -2,7 +2,6 @@ import { useExercises } from "@/contexts/exercise-context";
 import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { LimitedFunctionalityBanner } from "@/components/limited-functionality-banner";
 
 export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     const { getExercises, deleteExercisesByIds, deleteAllExercises, isLoading } = useExercises();
