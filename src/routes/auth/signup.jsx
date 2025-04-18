@@ -16,31 +16,21 @@ const SignupPage = () => {
     const { signup, error, setError, isLoading } = useAuth();
     const navigate = useNavigate();
     
-    // Clear auth context error when component mounts or inputs change
     useEffect(() => {
         setError(null);
     }, [name, email, password, confirmPassword, setError]);
     
-    // Password strength and validation
     const validatePassword = (password) => {
-        // Check for empty password
         if (!password) return { valid: false, message: "Password is required" };
         
-        // Check minimum length
         if (password.length < 6) {
             return { valid: false, message: "Password must be at least 6 characters" };
         }
         
-        // For stronger validation you could check for:
-        // - Uppercase letters
-        // - Lowercase letters
-        // - Numbers
-        // - Special characters
-        
+       
         return { valid: true, message: "Password is valid" };
     };
     
-    // Password strength indicator
     const getPasswordStrength = () => {
         if (!password) return { strength: 0, text: "" };
         
@@ -51,7 +41,6 @@ const SignupPage = () => {
     
     const passwordStrength = getPasswordStrength();
     
-    // Form validation
     const validateForm = () => {
         const errors = {};
         
@@ -85,15 +74,12 @@ const SignupPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Reset errors
         setError(null);
         
-        // Validate form
         if (!validateForm()) {
             return;
         }
         
-        // Prevent multiple submissions
         if (isSubmitting) return;
         
         try {
@@ -200,7 +186,6 @@ const SignupPage = () => {
                             <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
                         )}
                         
-                        {/* Password strength indicator */}
                         {password && (
                             <div className="mt-2">
                                 <div className="mb-1 flex gap-1">
@@ -317,7 +302,6 @@ const SignupPage = () => {
                     </p>
                 </form>
                 
-                {/* Password requirements info */}
                 <div className="mt-6 rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
                     <div className="flex items-center gap-2 font-medium mb-2">
                         <Info className="h-4 w-4 flex-shrink-0" />

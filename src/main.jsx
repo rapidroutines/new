@@ -8,7 +8,6 @@ import { ExerciseProvider } from '@/contexts/exercise-context'
 import { ChatbotProvider } from '@/contexts/chatbot-context'
 import { SavedExercisesProvider } from '@/contexts/saved-exercises-context'
 
-// Create a root provider component to wrap all providers
 const RootProvider = ({ children }) => (
   <StrictMode>
     <ThemeProvider>

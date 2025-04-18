@@ -7,7 +7,6 @@ const ExerciseTrackerPage = () => {
     return (
         <div className="flex flex-col min-h-screen">
             <div className="flex-grow flex flex-col gap-y-4 p-0 md:p-2">
-                {/* Exercise Tracker iframe - Full screen on mobile, properly sized on larger screens */}
                 <div className="relative rounded-lg shadow-sm overflow-hidden flex-grow h-[calc(100vh-120px)]">
                     {isLoading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
@@ -29,7 +28,6 @@ const ExerciseTrackerPage = () => {
                 </div>
             </div>
 
-            {/* Footer */}
             <Footer />
         </div>
     );

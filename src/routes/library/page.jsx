@@ -20,8 +20,6 @@ import benchDipsImage from "@/assets/bench-dips.png";
 import frontLeverImage from "@/assets/front-lever.png";
 import plancheLeanImage from "@/assets/planche-lean.png";
 import frogPoseImage from "@/assets/frog-pose.png";
-
-// Import placeholders for new exercise images
 import russianTwistImage from "@/assets/russian-twists.png"; 
 import alternateHeelTouchesImage from "@/assets/alternate-heel-touches.png"; 
 import sidePlankImage from "@/assets/side-plank.png"; 
@@ -32,7 +30,6 @@ import downwardDogImage from "@/assets/downward-dog.png";
 import worldsGreatestStretchImage from "@/assets/worlds-greatest-stretch.png"; 
 import butterflyImage from "@/assets/butterfly.png"; 
 
-// Exercise data with added core and mobility exercises
 const exercises = [
     {
         id: 1,
@@ -371,7 +368,6 @@ const exercises = [
             "Lower legs only as far as you maintain form"
         ]
     },
-    // NEW MOBILITY EXERCISES
     {
         id: 22,
         title: "Hip Flexor Stretch",
@@ -438,7 +434,6 @@ const exercises = [
     }
 ];
 
-// Custom color variable for the requested blue shade
 const customBlue = "#1e628c";
 
 const LibraryPage = () => {
@@ -449,42 +444,39 @@ const LibraryPage = () => {
     const { isAuthenticated } = useAuth();
     const { addSavedExercise, removeSavedExercise, isSaved } = useSavedExercises();
     
-    // Handle save/unsave function
-const handleSaveToggle = (e, exercise) => {
-    e.stopPropagation();
+    const handleSaveToggle = (e, exercise) => {
+        e.stopPropagation();
+        
+        if (!isAuthenticated) {
+            return;
+        }
+        
+        if (isSaved(exercise.id)) {
+            removeSavedExercise(exercise.id);
+        } else {
+            addSavedExercise(exercise);
+        }
+    };
     
-    if (isSaved(exercise.id)) {
-        removeSavedExercise(exercise.id);
-    } else {
-        addSavedExercise(exercise);
-    }
-};
-    
-    // Show exercise details modal
     const showExerciseDetails = (exercise) => {
         setSelectedExercise(exercise);
     };
     
-    // Close exercise details modal
     const closeExerciseDetails = () => {
         setSelectedExercise(null);
     };
     
-    // Update document title for better SEO and user experience
     useEffect(() => {
         document.title = "RapidRoutines - Exercise Library";
     }, []);
     
-    // Filter exercises based on active category and search query
     useEffect(() => {
         let filtered = exercises;
         
-        // Filter by category first
         if (activeCategory !== 'all') {
             filtered = filtered.filter(exercise => exercise.category === activeCategory);
         }
         
-        // Then apply search filter if there's a query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
             filtered = filtered.filter(exercise => 
@@ -498,11 +490,8 @@ const handleSaveToggle = (e, exercise) => {
 
     return (
         <div className="flex flex-col gap-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
-
-                
-                {/* Search input */}
-                <div className="relative w-full max-w-sm">
+            <div className="flex justify-center mb-6 mt-2">
+                <div className="relative w-full max-w-md">
                     <div className="flex h-10 w-full items-center overflow-hidden rounded-md border border-slate-300 bg-white">
                         <div className="flex h-full items-center justify-center px-3">
                             <Search className="h-4 w-4 text-slate-500" />
@@ -518,7 +507,7 @@ const handleSaveToggle = (e, exercise) => {
                 </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4 mb-4">
+            <div className="flex flex-wrap justify-center gap-4 mb-6">
                 <button 
                     onClick={() => setActiveCategory('all')}
                     className={cn(
@@ -593,16 +582,15 @@ const handleSaveToggle = (e, exercise) => {
                                 {exercise.category}
                             </div>
                             
-                            {/* Save button */}
                             <button
                                 onClick={(e) => handleSaveToggle(e, exercise)}
                                 className="absolute right-2 bottom-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-700 shadow-md transition-colors hover:bg-white"
-                                title={isSaved(exercise.id) ? "Remove from saved" : "Save exercise"}
+                                title={isSaved(exercise.id) ? "Remove from saved" : (isAuthenticated ? "Save exercise" : "Sign in to save")}
                             >
                                 {isSaved(exercise.id) ? (
                                     <BookmarkCheck className="h-5 w-5 text-[#1e628c]" />
                                 ) : (
-                                    <BookmarkPlus className="h-5 w-5" />
+                                    <BookmarkPlus className={`h-5 w-5 ${!isAuthenticated ? "text-slate-400" : ""}`} />
                                 )}
                             </button>
                         </div>
@@ -640,7 +628,6 @@ const handleSaveToggle = (e, exercise) => {
                 ))}
             </div>
 
-            {/* No results message when filters return empty */}
             {filteredExercises.length === 0 && (
                 <div className="py-8 text-center">
                     <p className="text-slate-600">
@@ -660,11 +647,9 @@ const handleSaveToggle = (e, exercise) => {
                 </div>
             )}
 
-            {/* Exercise Details Modal */}
             {selectedExercise && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeExerciseDetails}>
                     <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Modal Header with Image */}
                         <div className="relative h-56 w-full">
                             <img 
                                 src={selectedExercise.image} 
@@ -672,7 +657,6 @@ const handleSaveToggle = (e, exercise) => {
                                 className="h-full w-full object-cover"
                             />
                             
-                            {/* Category Badge */}
                             <div 
                                 className="absolute left-4 top-4 rounded-full px-3 py-1 text-sm font-semibold text-white"
                                 style={{
@@ -684,7 +668,6 @@ const handleSaveToggle = (e, exercise) => {
                                 {selectedExercise.category}
                             </div>
                             
-                            {/* Close Button */}
                             <button 
                                 className="absolute right-4 top-4 rounded-full bg-white/80 p-2 text-slate-800 hover:bg-white"
                                 onClick={closeExerciseDetails}
@@ -692,10 +675,10 @@ const handleSaveToggle = (e, exercise) => {
                                 <X className="h-5 w-5" />
                             </button>
                             
-                            {/* Save Button */}
                             <button
                                 onClick={(e) => handleSaveToggle(e, selectedExercise)}
-                                className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors hover:bg-slate-50"
+                                className={`absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors hover:bg-slate-50 ${!isAuthenticated ? "opacity-50 cursor-not-allowed" : ""}`}
+                                disabled={!isAuthenticated}
                             >
                                 {isSaved(selectedExercise.id) ? (
                                     <>
@@ -705,12 +688,11 @@ const handleSaveToggle = (e, exercise) => {
                                 ) : (
                                     <>
                                         <BookmarkPlus className="h-4 w-4" />
-                                        <span>Save</span>
+                                        <span>{isAuthenticated ? "Save" : "Sign in to save"}</span>
                                     </>
                                 )}
                             </button>
                             
-                            {/* Difficulty indicator */}
                             <div className="absolute left-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium shadow-md">
                                 <div className="flex items-center gap-1">
                                     {[1, 2, 3].map((level) => (
@@ -737,12 +719,10 @@ const handleSaveToggle = (e, exercise) => {
                             </div>
                         </div>
                         
-                        {/* Modal Content */}
                         <div className="p-6">
                             <h2 className="text-2xl font-bold text-slate-900">{selectedExercise.title}</h2>
                             <p className="mt-2 text-slate-600">{selectedExercise.description}</p>
                             
-                            {/* Exercise Recommendation */}
                             <div className="mt-6 grid grid-cols-2 gap-4">
                                 <div className="rounded-lg bg-slate-50 p-4">
                                     <h3 className="text-sm font-semibold text-slate-900">Sets</h3>
@@ -754,7 +734,6 @@ const handleSaveToggle = (e, exercise) => {
                                 </div>
                             </div>
                             
-                            {/* Tips Section */}
                             <div className="mt-6">
                                 <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                                     <Info className="h-5 w-5 text-[#1e628c]" />
@@ -770,7 +749,6 @@ const handleSaveToggle = (e, exercise) => {
                                 </ul>
                             </div>
                             
-                            {/* Footer */}
                             <div className="mt-8 border-t border-slate-200 pt-4">
                                 <button
                                     className="w-full rounded-lg bg-[#1e628c] py-3 font-medium text-white transition-colors hover:bg-[#174e70]"

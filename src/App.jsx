@@ -29,20 +29,17 @@ function App() {
     return (
         <Router>
             <Routes>
-                {/* Public Routes */}
                 <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><SignupPage /></PublicRoute>} />
                 <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
                 <Route path="/reset-password/:token" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
 
-                {/* Dashboard with auth overlay if not authenticated */}
                 <Route path="/" element={
                     <Layout>
                         <DashboardPage />
                     </Layout>
                 } />
 
-                {/* Feature routes - accessible to all but with limited functionality when not authenticated */}
                 <Route path="/chatbot" element={
                     <Layout>
                         <ChatbotPage limited={!isAuthenticated} />
@@ -73,14 +70,12 @@ function App() {
                     </Layout>
                 } />
 
-                {/* Protected Routes - redirect to login if not authenticated */}
                 <Route path="/profile" element={
                     <ProtectedRoute>
                         <Layout><ProfilePage /></Layout>
                     </ProtectedRoute>
                 } />
 
-                {/* Catch-all route */}
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </Router>

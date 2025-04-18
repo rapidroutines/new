@@ -14,33 +14,23 @@ const ResetPasswordPage = () => {
     const navigate = useNavigate();
     const { token } = useParams();
     
-    // Check if token exists
     useEffect(() => {
         if (!token) {
             navigate("/forgot-password");
         }
     }, [token, navigate]);
     
-    // Password strength and validation
     const validatePassword = (password) => {
-        // Check for empty password
         if (!password) return { valid: false, message: "Password is required" };
         
-        // Check minimum length
         if (password.length < 6) {
             return { valid: false, message: "Password must be at least 6 characters" };
         }
         
-        // For stronger validation you could check for:
-        // - Uppercase letters
-        // - Lowercase letters
-        // - Numbers
-        // - Special characters
-        
+ 
         return { valid: true, message: "Password is valid" };
     };
     
-    // Password strength indicator
     const getPasswordStrength = () => {
         if (!password) return { strength: 0, text: "" };
         
@@ -51,7 +41,6 @@ const ResetPasswordPage = () => {
     
     const passwordStrength = getPasswordStrength();
     
-    // Form validation
     const validateForm = () => {
         const errors = {};
         
@@ -72,7 +61,6 @@ const ResetPasswordPage = () => {
         e.preventDefault();
         setError(null);
         
-        // Validate form
         if (!validateForm()) {
             return;
         }
@@ -81,7 +69,6 @@ const ResetPasswordPage = () => {
         
         if (success) {
             setIsSuccess(true);
-            // Redirect to login after 3 seconds
             setTimeout(() => {
                 navigate("/login");
             }, 3000);
@@ -155,7 +142,6 @@ const ResetPasswordPage = () => {
                                 <p className="mt-1 text-xs text-red-600">{validationErrors.password}</p>
                             )}
                             
-                            {/* Password strength indicator */}
                             {password && (
                                 <div className="mt-2">
                                     <div className="mb-1 flex gap-1">
@@ -213,7 +199,6 @@ const ResetPasswordPage = () => {
                             )}
                         </div>
                         
-                        {/* Password requirements info */}
                         <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
                             <div className="flex items-center gap-2 font-medium mb-2">
                                 <Info className="h-4 w-4 flex-shrink-0" />

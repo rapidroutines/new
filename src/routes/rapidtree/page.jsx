@@ -149,7 +149,7 @@ const RapidTreePage = () => {
         if (savedProgress) {
             try {
                 const parsedProgress = JSON.parse(savedProgress);
-                const updatedExercises = initializeExerciseCategories(); // Start with a fresh copy
+                const updatedExercises = initializeExerciseCategories();
 
                 Object.keys(parsedProgress).forEach(category => {
                     if (updatedExercises[category]) {

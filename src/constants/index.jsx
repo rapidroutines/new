@@ -1,6 +1,6 @@
 import { 
   BookOpen, 
-  ChartColumn, 
+  MessageSquare, 
   Dumbbell, 
   Home, 
   NotepadText, 
@@ -24,7 +24,7 @@ export const navbarLinks = [
     links: [
       {
         label: "ChatBot",
-        icon: ChartColumn,
+        icon: MessageSquare,
         path: "/chatbot",
       },
       {

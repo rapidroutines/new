@@ -1,117 +1,121 @@
-// src/contexts/exercise-context.jsx
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
-import { syncUserData, syncUserDataDeletion, fetchUserData, getFromLocalStorage } from "../services/user-data-service";
+import axios from "axios";
 
-// Create context
 const ExerciseContext = createContext({});
 
-// Provider component
 export const ExerciseProvider = ({ children }) => {
   const [exercises, setExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
-  // Load exercises on mount
   useEffect(() => {
-    const loadExercises = async () => {
+    const fetchExercises = async () => {
+      if (!isAuthenticated) {
+        setExercises([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        
-        // 1. First try from localStorage for immediate display
-        const localExercises = getFromLocalStorage("exercises_data", []);
-        if (localExercises.length > 0) {
-          setExercises(localExercises);
-        }
-        
-        // 2. If authenticated, try to get from server
-        if (isAuthenticated) {
-          const result = await fetchUserData();
-          
-          if (result.success && result.data?.exerciseLog?.length > 0) {
-            setExercises(result.data.exerciseLog);
-          } else if (localExercises.length > 0) {
-            // 3. If server has no data but we have local data, sync to server
-            await syncUserData("exerciseLog", localExercises);
-          }
-        }
+        const response = await axios.get("/api/user-data/get-data");
+        setExercises(response.data.exerciseLog || []);
       } catch (error) {
-        console.error("Error loading exercises:", error);
+        console.error("Error fetching exercise log:", error);
+        setExercises([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadExercises();
+    fetchExercises();
   }, [isAuthenticated]);
 
-  // Sync when exercises change
-  useEffect(() => {
-    const syncExercises = async () => {
-      if (isAuthenticated && exercises.length > 0) {
-        await syncUserData("exerciseLog", exercises);
-      }
-    };
-    
-    // Skip initial sync
-    if (!isLoading) {
-      syncExercises();
-    }
-  }, [exercises, isAuthenticated, isLoading]);
+  const addExercise = async (exerciseData) => {
+    if (!isAuthenticated) return false;
 
-  // Add a new exercise
-  const addExercise = (exerciseData) => {
-    if (!exerciseData) return false;
-    
-    const newExercise = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      ...exerciseData
-    };
-    
-    setExercises(prev => [...prev, newExercise]);
-    return true;
+    try {
+      const newExercise = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        ...exerciseData
+      };
+      
+      const updatedExercises = [...exercises, newExercise];
+      
+      await axios.post("/api/user-data/save-data", {
+        dataType: "exerciseLog",
+        data: updatedExercises
+      });
+
+      setExercises(updatedExercises);
+      return true;
+    } catch (error) {
+      console.error("Error saving exercise:", error);
+      return false;
+    }
   };
 
-  // Delete a specific exercise
-  const deleteExercise = (exerciseId) => {
-    if (!exerciseId) return false;
-    
-    // Filter out the deleted exercise
-    const updatedExercises = exercises.filter(ex => ex.id !== exerciseId);
-    
-    // Update local state
-    setExercises(updatedExercises);
-    
-    // Sync with server if authenticated - use the deletion sync function
-    if (isAuthenticated) {
-      syncUserDataDeletion("exerciseLog", updatedExercises)
-        .catch(err => console.error("Error syncing exercise deletion:", err));
+  // Delete a single exercise by ID
+  const deleteExercise = async (exerciseId) => {
+    if (!isAuthenticated) return false;
+
+    try {
+      const updatedExercises = exercises.filter(ex => ex.id !== exerciseId);
+      
+      await axios.post("/api/user-data/save-data", {
+        dataType: "exerciseLog",
+        data: updatedExercises
+      });
+
+      setExercises(updatedExercises);
+      return true;
+    } catch (error) {
+      console.error("Error deleting exercise:", error);
+      return false;
     }
-    
-    return true;
   };
 
-  // Delete all exercises
-  const deleteAllExercises = () => {
-    // Clear local state
-    setExercises([]);
-    
-    // Sync empty array with server if authenticated
-    if (isAuthenticated) {
-      syncUserDataDeletion("exerciseLog", [])
-        .catch(err => console.error("Error syncing all exercises deletion:", err));
+  // Delete multiple exercises by IDs (for deleting entire exercise groups)
+  const deleteExercisesByIds = async (exerciseIds) => {
+    if (!isAuthenticated || !exerciseIds || exerciseIds.length === 0) return false;
+
+    try {
+      const updatedExercises = exercises.filter(ex => !exerciseIds.includes(ex.id));
+      
+      await axios.post("/api/user-data/save-data", {
+        dataType: "exerciseLog",
+        data: updatedExercises
+      });
+
+      setExercises(updatedExercises);
+      return true;
+    } catch (error) {
+      console.error("Error deleting exercises:", error);
+      return false;
     }
-    
-    return true;
   };
 
-  // Get exercises with optional filtering
+  const deleteAllExercises = async () => {
+    if (!isAuthenticated) return false;
+
+    try {
+      await axios.post("/api/user-data/save-data", {
+        dataType: "exerciseLog",
+        data: []
+      });
+
+      setExercises([]);
+      return true;
+    } catch (error) {
+      console.error("Error deleting all exercises:", error);
+      return false;
+    }
+  };
+
   const getExercises = (count = null) => {
-    if (!exercises?.length) return [];
-    
-    // Sort by timestamp (newest first)
     const sortedExercises = [...exercises].sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
     );
@@ -119,31 +123,14 @@ export const ExerciseProvider = ({ children }) => {
     return count ? sortedExercises.slice(0, count) : sortedExercises;
   };
 
-  // Manual sync function
-  const syncExercisesWithCloud = async () => {
-    if (!isAuthenticated) return false;
-    
-    try {
-      setIsLoading(true);
-      const result = await syncUserData("exerciseLog", exercises);
-      return result.success;
-    } catch (error) {
-      console.error("Error syncing exercises:", error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Context value
   const value = {
     exercises,
     addExercise,
     getExercises,
     deleteExercise,
+    deleteExercisesByIds,
     deleteAllExercises,
-    isLoading,
-    syncExercisesWithCloud
+    isLoading
   };
 
   return <ExerciseContext.Provider value={value}>{children}</ExerciseContext.Provider>;
@@ -153,7 +140,6 @@ ExerciseProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-// Custom hook
 export const useExercises = () => {
   const context = useContext(ExerciseContext);
   

@@ -8,12 +8,10 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
     const [expandedView, setExpandedView] = useState(false);
     const [notification, setNotification] = useState(null);
     
-    // Get the chats to display based on expanded state
     const chatsToDisplay = expandedView 
         ? getChatHistory() 
         : getChatHistory(maxItems);
     
-    // Format date nicely
     const formatDate = (isoDate) => {
         const date = new Date(isoDate);
         return new Intl.DateTimeFormat('en-US', {
@@ -25,17 +23,14 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
         }).format(date);
     };
     
-    // Show notification
     const showNotification = (type, message) => {
         setNotification({ type, message });
         
-        // Auto hide after 5 seconds
         setTimeout(() => {
             setNotification(null);
         }, 5000);
     };
     
-    // Handle deleting a single chat
     const handleDeleteChat = (e, chatId) => {
         e.preventDefault();
         e.stopPropagation();
@@ -49,7 +44,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
         }
     };
     
-    // Handle deleting all chats
     const handleDeleteAllChats = () => {
         if (confirm("Are you sure you want to delete ALL chat history? This action cannot be undone.")) {
             const success = deleteAllChatSessions();
@@ -60,7 +54,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
         }
     };
     
-    // If loading, show loading state
     if (isLoading) {
         return (
             <div className="flex h-40 items-center justify-center rounded-lg bg-white p-6 shadow-md">
@@ -69,7 +62,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
         );
     }
     
-    // If no chats, show empty state
     if (!chatsToDisplay || chatsToDisplay.length === 0) {
         return (
             <div className="rounded-xl bg-white p-6 shadow-md">
@@ -85,10 +77,8 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
         );
     }
     
-    // Display chat history
     return (
         <div className="rounded-xl bg-white p-6 shadow-md">
-            {/* Notification */}
             {notification && (
                 <div 
                     className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
@@ -158,7 +148,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
                                 </div>
                             </div>
                             
-                            {/* Show conversation stats as badges */}
                             <div className="flex gap-2">
                                 <button
                                     onClick={(e) => handleDeleteChat(e, chat.id)}
@@ -179,7 +168,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
                             </div>
                         </div>
                         
-                        {/* Preview of conversation (first few messages) */}
                         {chat.messages && chat.messages.length > 0 && (
                             <div className="mt-3 max-h-20 overflow-hidden text-ellipsis border-t border-slate-200 pt-2 text-sm text-slate-600">
                                 <div className="line-clamp-2">
@@ -190,7 +178,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
                             </div>
                         )}
                         
-                        {/* Link to chatbot - Update with conversationId */}
                         <div className="mt-3 flex justify-end">
                             <Link 
                                 to={`/chatbot?conversationId=${chat.id}`}

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useChatbot } from "@/contexts/chatbot-context";
 import { useExercises } from "@/contexts/exercise-context";
-import { useSavedExercises } from "@/contexts/saved-exercises-context";
 import { Footer } from "@/layouts/footer";
 import { User, Mail, Clock, LogOut, Save, CheckCircle, RefreshCw, AlertCircle, Database } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -12,7 +11,6 @@ const ProfilePage = () => {
     const { user, logout, isAuthenticated, updateProfile } = useAuth();
     const { getChatHistory, syncChatHistoryWithCloud, deleteAllChatSessions } = useChatbot();
     const { getExercises, syncExercisesWithCloud, deleteAllExercises } = useExercises();
-    const { savedExercises, syncSavedExercisesWithCloud } = useSavedExercises();
     
     const navigate = useNavigate();
     const location = useLocation();
@@ -24,12 +22,9 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
     
-    // Get data counts for display
     const chatHistoryCount = getChatHistory().length;
     const exercisesCount = getExercises().length;
-    const savedExercisesCount = savedExercises.length;
     
-    // Check for tab parameter in URL
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const tabParam = searchParams.get('tab');
@@ -38,7 +33,6 @@ const ProfilePage = () => {
         }
     }, [location]);
     
-    // Load user data when component mounts
     useEffect(() => {
         if (user) {
             setDisplayName(user.name || "");
@@ -51,9 +45,7 @@ const ProfilePage = () => {
         navigate("/");
     };
 
-    // Function to save profile changes
     const saveProfileChanges = async () => {
-        // Validate inputs
         if (!displayName.trim()) {
             setErrorMessage("Display name cannot be empty");
             return;
@@ -64,29 +56,24 @@ const ProfilePage = () => {
             return;
         }
         
-        // Create updated user object
         const userData = {
             name: displayName,
             email: email
         };
         
-        // Update user data
         const success = await updateProfile(userData);
         
         if (success) {
-            // Show success message and exit edit mode
             setSuccessMessage("Profile updated successfully!");
             setIsEditing(false);
             setErrorMessage("");
             
-            // Clear success message after 3 seconds
             setTimeout(() => {
                 setSuccessMessage("");
             }, 3000);
         }
     };
     
-    // Function to sync all data with the cloud
     const syncAllData = async () => {
         if (!isAuthenticated) {
             setErrorMessage("You must be logged in to sync data");
@@ -96,16 +83,13 @@ const ProfilePage = () => {
         setIsSyncing(true);
         
         try {
-            // Sync all data types in parallel
             await Promise.all([
                 syncChatHistoryWithCloud(),
-                syncExercisesWithCloud(),
-                syncSavedExercisesWithCloud()
+                syncExercisesWithCloud()
             ]);
             
             setSuccessMessage("All data synchronized successfully!");
             
-            // Clear success message after 3 seconds
             setTimeout(() => {
                 setSuccessMessage("");
             }, 3000);
@@ -113,7 +97,6 @@ const ProfilePage = () => {
             console.error("Error syncing data:", error);
             setErrorMessage("Error synchronizing data. Please try again.");
             
-            // Clear error message after 3 seconds
             setTimeout(() => {
                 setErrorMessage("");
             }, 3000);
@@ -122,17 +105,13 @@ const ProfilePage = () => {
         }
     };
     
-    // Function to clear chatbot history
     const clearChatbotHistory = () => {
         if (confirm("Are you sure you want to clear all your chatbot history? This cannot be undone.")) {
             try {
-                // Delete all chat sessions
                 deleteAllChatSessions();
                 
-                // Show success message
                 setSuccessMessage("Chatbot history cleared successfully!");
                 
-                // Clear message after timeout
                 setTimeout(() => {
                     setSuccessMessage("");
                 }, 2000);
@@ -147,17 +126,13 @@ const ProfilePage = () => {
         }
     };
     
-    // Function to clear exercise history
     const clearExerciseHistory = () => {
         if (confirm("Are you sure you want to clear your exercise history? This cannot be undone.")) {
             try {
-                // Delete all exercises
                 deleteAllExercises();
                 
-                // Show success message
                 setSuccessMessage("Exercise history cleared successfully!");
                 
-                // Clear message after timeout
                 setTimeout(() => {
                     setSuccessMessage("");
                 }, 2000);
@@ -172,39 +147,9 @@ const ProfilePage = () => {
         }
     };
     
-    // Function to clear saved exercises
-
-    const clearSavedExercises = () => {
-      if (confirm("Are you sure you want to clear all saved exercises? This cannot be undone.")) {
-        try {
-          // Use the context's function to remove all saved exercises instead of manipulating localStorage directly
-          const success = removeSavedExercises(); // This is what needs to be added to the SavedExercisesContext
-      
-          if (success) {
-            // Show success message
-            setSuccessMessage("Saved exercises cleared successfully!");
-        
-            // Clear message after timeout
-            setTimeout(() => {
-              setSuccessMessage("");
-            }, 2000);
-          }
-        } catch (error) {
-          console.error("Error clearing saved exercises:", error);
-          setErrorMessage("Error clearing saved exercises. Please try again.");
-      
-          setTimeout(() => {
-            setErrorMessage("");
-          }, 3000);
-        }
-      }
-    };
-    
-    // Function to delete account and all data
     const deleteAccount = () => {
         if (confirm("Are you sure you want to delete your account and all associated data? This action cannot be undone.")) {
             try {
-                // Clear all user data
                 localStorage.removeItem("savedExercises_data");
                 localStorage.removeItem("exercises_data");
                 localStorage.removeItem("chatbot_history_data");
@@ -257,7 +202,6 @@ const ProfilePage = () => {
         <div className="flex flex-col gap-y-6">
             <h1 className="title">Your Account</h1>
             
-            {/* Success Message */}
             {successMessage && (
                 <div className="flex items-center gap-2 rounded-lg bg-green-100 p-3 text-green-800">
                     <CheckCircle className="h-5 w-5" />
@@ -265,7 +209,6 @@ const ProfilePage = () => {
                 </div>
             )}
             
-            {/* Error Message */}
             {errorMessage && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-100 p-3 text-red-800">
                     <AlertCircle className="h-5 w-5" />
@@ -274,7 +217,6 @@ const ProfilePage = () => {
             )}
             
             <div className="flex flex-col gap-4 md:flex-row">
-                {/* Sidebar/Tabs */}
                 <div className="w-full rounded-lg bg-white p-4 shadow-md md:w-64 md:flex-shrink-0">
                     <nav className="space-y-1">
                         <button
@@ -303,7 +245,6 @@ const ProfilePage = () => {
                         </button>
                     </nav>
                     
-                    {/* Sync button */}
                     {isAuthenticated && (
                         <div className="mt-4">
                             <button
@@ -341,9 +282,7 @@ const ProfilePage = () => {
                     </div>
                 </div>
                 
-                {/* Main Content */}
                 <div className="flex-1 rounded-lg bg-white p-6 shadow-md">
-                    {/* Profile Tab */}
                     {activeTab === "profile" && (
                         <div>
                             <div className="mb-4 flex items-center justify-between">
@@ -357,7 +296,6 @@ const ProfilePage = () => {
                             </div>
                             
                             {isEditing ? (
-                                // Edit Mode
                                 <div className="space-y-4">
                                     <div className="rounded-lg border border-slate-200 p-4">
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
@@ -403,7 +341,6 @@ const ProfilePage = () => {
                                     </div>
                                 </div>
                             ) : (
-                                // View Mode
                                 <div className="space-y-4">
                                     <div className="rounded-lg border border-slate-200 p-4">
                                         <div className="flex items-center gap-3">
@@ -445,14 +382,9 @@ const ProfilePage = () => {
                                 </div>
                             )}
                             
-                            {/* Data Summary */}
                             <div className="mt-8">
                                 <h3 className="mb-4 text-lg font-medium text-slate-800">Your Data Summary</h3>
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                    <div className="rounded-lg border border-slate-200 p-4 text-center">
-                                        <div className="text-2xl font-bold text-[#1e628c]">{savedExercisesCount}</div>
-                                        <div className="text-sm text-slate-600">Saved Exercises</div>
-                                    </div>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div className="rounded-lg border border-slate-200 p-4 text-center">
                                         <div className="text-2xl font-bold text-[#1e628c]">{exercisesCount}</div>
                                         <div className="text-sm text-slate-600">Exercise Logs</div>
@@ -466,35 +398,11 @@ const ProfilePage = () => {
                         </div>
                     )}
                     
-                    {/* Settings Tab */}
                     {activeTab === "settings" && (
                         <div>
                             <h2 className="mb-6 text-xl font-semibold text-slate-800">Data Management</h2>
                             
                             <div className="space-y-6">
-                                <div className="rounded-lg border border-slate-200 p-5">
-                                    <h3 className="mb-1 font-medium text-slate-900">Saved Exercises</h3>
-                                    <p className="mb-4 text-sm text-slate-500">
-                                        Manage exercises you've saved to your library ({savedExercisesCount} {savedExercisesCount === 1 ? 'exercise' : 'exercises'})
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Link
-                                            to="/library"
-                                            className="rounded-lg bg-[#1e628c] px-3 py-2 text-sm font-medium text-white hover:bg-[#17516f]"
-                                        >
-                                            View Saved Exercises
-                                        </Link>
-                                        <button 
-                                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                            disabled={savedExercisesCount === 0}
-                                            onClick={clearSavedExercises}
-                                        >
-                                            Clear All Saved Exercises
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                {/* Chatbot History Section */}
                                 <div className="rounded-lg border border-slate-200 p-5">
                                     <h3 className="mb-1 font-medium text-slate-900">Chatbot History</h3>
                                     <p className="mb-4 text-sm text-slate-500">

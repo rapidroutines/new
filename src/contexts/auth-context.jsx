@@ -2,21 +2,17 @@ import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 
-// Create context
 const AuthContext = createContext({});
 
-// Provider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Set up axios defaults - don't add "/api" here
     useEffect(() => {
         axios.defaults.baseURL = window.location.origin;
         
-        // Add interceptor to handle 401s
         const interceptor = axios.interceptors.response.use(
             response => response,
             error => {
@@ -33,7 +29,6 @@ export const AuthProvider = ({ children }) => {
         return () => axios.interceptors.response.eject(interceptor);
     }, []);
 
-    // Load user from token
     useEffect(() => {
         const loadUser = async () => {
             try {
@@ -45,10 +40,8 @@ export const AuthProvider = ({ children }) => {
                     return;
                 }
                 
-                // Set auth header
                 axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
                 
-                // Get user data
                 const res = await axios.get("/api/auth/user");
                 
                 if (res.data?.user) {
@@ -67,7 +60,6 @@ export const AuthProvider = ({ children }) => {
         loadUser();
     }, []);
 
-    // Login
     const login = async (email, password) => {
         try {
             setError(null);
@@ -92,7 +84,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Signup
     const signup = async (name, email, password) => {
         try {
             setError(null);
@@ -117,7 +108,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Update profile
     const updateProfile = async (userData) => {
         try {
             setError(null);
@@ -139,7 +129,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Forgot password
     const forgotPassword = async (email) => {
         try {
             setError(null);
@@ -155,7 +144,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Reset password
     const resetPassword = async (token, password) => {
         try {
             setError(null);
@@ -171,7 +159,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Logout
     const logout = () => {
         localStorage.removeItem("token");
         delete axios.defaults.headers.common["Authorization"];
@@ -179,7 +166,6 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
     };
 
-    // Auth context values
     const value = {
         user,
         isAuthenticated,
@@ -201,7 +187,6 @@ AuthProvider.propTypes = {
     children: PropTypes.node.isRequired,
 };
 
-// Custom hook for using the auth context
 export const useAuth = () => {
     const context = useContext(AuthContext);
     

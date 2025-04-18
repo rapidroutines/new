@@ -12,7 +12,6 @@ export const Header = ({ collapsed, setCollapsed }) => {
     const userMenuRef = useRef(null);
     const userImgRef = useRef(null);
 
-    // Close user menu when clicking outside
     useClickOutside([userMenuRef, userImgRef], () => {
         setUserMenuOpen(false);
     });
@@ -28,7 +27,6 @@ export const Header = ({ collapsed, setCollapsed }) => {
                 </button>
             </div>
             
-            {/* User section */}
             <div className="flex items-center">
                 {isAuthenticated ? (
                     <div className="relative">

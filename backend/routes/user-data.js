@@ -22,28 +22,49 @@ router.post('/save-data', auth, async (req, res) => {
     }
 
     try {
-        // Find or create user data document
-        let userDataDoc = await UserData.findOne({ user: req.user.id });
+        // Use findOneAndUpdate with upsert to handle concurrent updates
+        const updatedUserData = await UserData.findOneAndUpdate(
+            { user: req.user.id },
+            { 
+                [dataType]: data,
+                $setOnInsert: { user: req.user.id },
+                updatedAt: Date.now() 
+            },
+            { 
+                upsert: true,  // Create document if it doesn't exist
+                new: true,     // Return the modified document
+                setDefaultsOnInsert: true,
+                runValidators: true,
+                context: 'query'
+            }
+        );
 
-        if (!userDataDoc) {
-            userDataDoc = new UserData({
-                user: req.user.id,
-                savedExercises: [],
-                exerciseLog: [],
-                chatHistory: []
+        res.status(200).json({ 
+            message: 'Data saved successfully',
+            data: updatedUserData 
+        });
+    } catch (err) {
+        console.error(`Error saving ${dataType}:`, err);
+        
+        // More detailed error handling
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ 
+                message: 'Invalid data format', 
+                details: err.errors 
             });
         }
 
-        // Update specific data type
-        userDataDoc[dataType] = data;
+        if (err.name === 'MongoError' && err.code === 11000) {
+            return res.status(409).json({ 
+                message: 'Duplicate key error', 
+                details: err.message 
+            });
+        }
 
-        // Save the document
-        await userDataDoc.save();
-
-        res.status(200).json({ message: 'Data saved successfully' });
-    } catch (err) {
-        console.error(`Error saving ${dataType}:`, err);
-        res.status(500).json({ message: 'Server error saving data' });
+        res.status(500).json({ 
+            message: 'Server error saving data',
+            error: err.message 
+        });
     }
 });
 

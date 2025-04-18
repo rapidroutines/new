@@ -1,24 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { Loader2, Info, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useExercises } from "@/contexts/exercise-context";
 import { Footer } from "@/layouts/footer";
 
 const RepBotPage = () => {
     const [isLoading, setIsLoading] = useState(true);
-    const [notification, setNotification] = useState(null);
-    const { addExercise, getExercises } = useExercises();
+    const { addExercise } = useExercises();
     const iframeRef = useRef(null);
     
-    // Keep track of processed exercise messages to prevent duplicates
+    // Keep track of processed message IDs to avoid duplicates
     const processedMessages = useRef(new Set());
     
-    // Track recent exercise sessions to consolidate repetitions
-    const recentExerciseSessions = useRef({});
-    
-    // Listen for messages from the iframe
     useEffect(() => {
         const handleMessage = (event) => {
-            // Only accept messages from our iframe source domains
+            // Validate message origin
             if (
                 event.origin !== "https://render-repbot.vercel.app" && 
                 event.origin !== "https://render-repbot.onrender.com"
@@ -26,11 +21,10 @@ const RepBotPage = () => {
                 return;
             }
             
-            // Check if it's an exercise completion message
             if (event.data && event.data.type === "exerciseCompleted") {
                 const { exerciseType, repCount } = event.data;
                 
-                // Create a unique message ID based on the timestamp and rep details
+                // Generate a unique ID for this message
                 const messageId = `${exerciseType}-${repCount}-${Date.now()}`;
                 
                 // Skip if we've already processed this message
@@ -39,56 +33,32 @@ const RepBotPage = () => {
                     return;
                 }
                 
-                // Add to processed set
+                // Mark this message as processed
                 processedMessages.current.add(messageId);
                 
-                // Manage exercise sessions
-                const currentTime = Date.now();
-                const sessionKey = exerciseType;
-                
-                // Check if we have an existing session for this exercise type
-                const existingSession = recentExerciseSessions.current[sessionKey];
-                
-                // If no existing session or session is too old (e.g., more than 5 minutes old)
-                if (!existingSession || (currentTime - existingSession.timestamp > 5 * 60 * 1000)) {
-                    // Create a new session
-                    recentExerciseSessions.current[sessionKey] = {
-                        exerciseType,
-                        totalReps: repCount,
-                        timestamp: currentTime
-                    };
-                } else {
-                    // Update existing session
-                    existingSession.totalReps += repCount;
-                    existingSession.timestamp = currentTime;
-                }
-                
-                // Log the exercise to the user's history
-                const sessionToLog = recentExerciseSessions.current[sessionKey];
-                const success = addExercise({
-                    exerciseType: sessionToLog.exerciseType,
-                    count: sessionToLog.totalReps,
-                    timestamp: new Date(sessionToLog.timestamp).toISOString()
+                // Log the exercise exactly as received from the RepBot
+                // This preserves the exact rep count
+                addExercise({
+                    exerciseType: exerciseType,
+                    count: repCount,
+                    timestamp: new Date().toISOString()
                 });
                 
-                if (success) {
-                    showNotification("success", `${sessionToLog.totalReps} rep${sessionToLog.totalReps !== 1 ? "s" : ""} of ${formatExerciseType(exerciseType)} saved to your log!`);
-                }
+                console.log(`Exercise logged: ${exerciseType}, ${repCount} reps`);
             }
         };
         
-        // Add the event listener
+        // Add event listener
         window.addEventListener("message", handleMessage);
         
-        // Clean up
+        // Clean up function
         return () => {
             window.removeEventListener("message", handleMessage);
         };
     }, [addExercise]);
     
-    // For backwards compatibility, check localStorage as a fallback (with duplicate prevention)
+    // Handle exercises saved to localStorage by the iframe
     useEffect(() => {
-        // Keep track of processed localStorage items
         const processedStorageItems = new Set();
         
         const checkLocalStorageForExercises = () => {
@@ -97,37 +67,32 @@ const RepBotPage = () => {
                 const storedExercise = localStorage.getItem(repbotExerciseKey);
                 
                 if (storedExercise) {
-                    // Parse the stored exercise data
                     const exerciseData = JSON.parse(storedExercise);
                     
-                    // Create a unique ID for this storage entry
                     const storageId = `${exerciseData.type}-${exerciseData.count}-${exerciseData.timestamp}`;
                     
-                    // Skip if we've already processed this exercise
                     if (processedStorageItems.has(storageId)) {
                         return;
                     }
                     
-                    // Check if this is a new exercise (hasn't been processed yet)
                     if (!exerciseData.processed) {
-                        // Log the exercise
-                        const success = addExercise({
+                        // Log the exercise directly with the exact rep count
+                        addExercise({
                             exerciseType: exerciseData.type,
-                            count: exerciseData.count
+                            count: exerciseData.count,
+                            timestamp: exerciseData.timestamp 
+                                ? new Date(exerciseData.timestamp).toISOString() 
+                                : new Date().toISOString()
                         });
                         
-                        if (success) {
-                            showNotification("success", `${exerciseData.count} rep${exerciseData.count !== 1 ? "s" : ""} of ${formatExerciseType(exerciseData.type)} saved to your log!`);
-                            
-                            // Mark as processed and save back to localStorage
-                            localStorage.setItem(repbotExerciseKey, JSON.stringify({
-                                ...exerciseData,
-                                processed: true
-                            }));
-                            
-                            // Add to processed set
-                            processedStorageItems.add(storageId);
-                        }
+                        // Mark as processed in localStorage
+                        localStorage.setItem(repbotExerciseKey, JSON.stringify({
+                            ...exerciseData,
+                            processed: true
+                        }));
+                        
+                        processedStorageItems.add(storageId);
+                        console.log(`Exercise from localStorage logged: ${exerciseData.type}, ${exerciseData.count} reps`);
                     }
                 }
             } catch (error) {
@@ -135,60 +100,15 @@ const RepBotPage = () => {
             }
         };
         
-        // Check for exercises periodically
         const interval = setInterval(checkLocalStorageForExercises, 2000);
         
-        // Also check when the component mounts
         checkLocalStorageForExercises();
         
         return () => clearInterval(interval);
     }, [addExercise]);
-    
-    // Format exercise type name nicely
-    const formatExerciseType = (exerciseType) => {
-        const names = {
-            bicepCurl: "Bicep Curl",
-            squat: "Squat",
-            pushup: "Push-up",
-            shoulderPress: "Shoulder Press",
-            tricepExtension: "Tricep Extension",
-            lunge: "Lunge",
-            russianTwist: "Russian Twist"
-        };
-        
-        return names[exerciseType] || exerciseType;
-    };
-    
-    // Show notification
-    const showNotification = (type, message) => {
-        setNotification({ type, message });
-        
-        // Auto hide after 5 seconds
-        setTimeout(() => {
-            setNotification(null);
-        }, 5000);
-    };
 
     return (
         <div className="flex flex-col h-[calc(100vh-80px)]">
-            {/* Notification */}
-            {notification && (
-                <div 
-                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all max-w-md ${
-                        notification.type === "success" ? "bg-green-100 text-green-800" : 
-                        notification.type === "error" ? "bg-red-100 text-red-800" : 
-                        "bg-blue-100 text-blue-800"
-                    }`}
-                >
-                    {notification.type === "success" ? (
-                        <Check className="h-5 w-5 flex-shrink-0" />
-                    ) : (
-                        <Info className="h-5 w-5 flex-shrink-0" />
-                    )}
-                    <span>{notification.message}</span>
-                </div>
-            )}
-            
             <div className="relative flex-1 w-full overflow-hidden bg-white dark:bg-slate-950 rounded-lg shadow-sm" style={{ minHeight: "600px" }}>
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-10">
@@ -212,12 +132,10 @@ const RepBotPage = () => {
                 />
             </div>
             
-            {/* Updated bottom message with smaller margin to save space */}
             <div className="text-center text-sm text-slate-600 mt-3 mb-2">
-                <p>Please allow 1-2 minutes for RepBot to become active. Your exercises will be saved automatically.</p>
+                <p>Your exercises are automatically saved as you complete reps if you are signed in.</p>
             </div>
             
-            {/* Added Footer Component */}
             <Footer />
         </div>
     );

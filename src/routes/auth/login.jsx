@@ -14,19 +14,16 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Clear errors when component mounts or when inputs change
     useEffect(() => {
         setError(null);
     }, [email, password, setError]);
     
-    // Get redirect path from location state or default to dashboard
     const from = location.state?.from || "/";
     
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
         
-        // Form validation
         if (!email.trim()) {
             setError("Email is required");
             return;
@@ -37,7 +34,6 @@ const LoginPage = () => {
             return;
         }
         
-        // Prevent multiple submissions
         if (isSubmitting) return;
         
         try {
@@ -45,7 +41,6 @@ const LoginPage = () => {
             const success = await login(email.trim(), password);
             
             if (success) {
-                // If remember me is checked, save email in localStorage
                 if (rememberMe) {
                     localStorage.setItem("rememberedEmail", email.trim());
                 } else {
@@ -61,7 +56,6 @@ const LoginPage = () => {
         }
     };
     
-    // Load remembered email if available
     useEffect(() => {
         const rememberedEmail = localStorage.getItem("rememberedEmail");
         if (rememberedEmail) {

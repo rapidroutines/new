@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useSavedExercises } from "@/contexts/saved-exercises-context";
 import { Link } from "react-router-dom";
-import { BookmarkCheck, ChevronRight } from "lucide-react";
+import { BookmarkCheck, ChevronRight, Trash2, AlertCircle } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export const SavedExercises = ({ maxItems = 4 }) => {
-    const { savedExercises, removeSavedExercise, isLoading } = useSavedExercises();
+    const { savedExercises, removeSavedExercise, removeAllSavedExercises, isLoading } = useSavedExercises();
     const [expandedView, setExpandedView] = useState(false);
     const [selectedExercise, setSelectedExercise] = useState(null);
+    const [notification, setNotification] = useState(null);
 
     const exercisesToDisplay = expandedView
         ? savedExercises
@@ -27,12 +28,27 @@ export const SavedExercises = ({ maxItems = 4 }) => {
         removeSavedExercise(exercise.id);
     };
 
+    const handleRemoveAll = () => {
+        if (confirm("Are you sure you want to remove all saved exercises?")) {
+            removeAllSavedExercises();
+            showNotification("success", "All exercises have been removed");
+        }
+    };
+
     const showExerciseDetails = (exercise) => {
         setSelectedExercise(exercise);
     };
 
     const closeExerciseDetails = () => {
         setSelectedExercise(null);
+    };
+
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        
+        setTimeout(() => {
+            setNotification(null);
+        }, 5000);
     };
 
     if (isLoading) {
@@ -60,17 +76,53 @@ export const SavedExercises = ({ maxItems = 4 }) => {
 
     return (
         <div className="rounded-xl bg-white p-6">
+            {notification && (
+                <div 
+                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                        notification.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    }`}
+                >
+                    {notification.type === "success" ? (
+                        <div className="flex items-center">
+                            <div className="mr-2 rounded-full bg-green-200 p-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            {notification.message}
+                        </div>
+                    ) : (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
+                            {notification.message}
+                        </div>
+                    )}
+                </div>
+            )}
+            
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Saved Exercises</h2>
-                {savedExercises.length > maxItems && (
-                    <button
-                        onClick={() => setExpandedView(!expandedView)}
-                        className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
-                    >
-                        {expandedView ? "Show Less" : "View All"}
-                        <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                    </button>
-                )}
+                <div className="flex items-center gap-3">
+                    {savedExercises.length > 0 && (
+                        <button
+                            onClick={handleRemoveAll}
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-[#1e628c] hover:bg-[#1e628c]/10"
+                            title="Remove all saved exercises"
+                        >
+                            <BookmarkCheck className="h-4 w-4" />
+                            <span className="hidden sm:inline">Unsave All</span>
+                        </button>
+                    )}
+                    {savedExercises.length > maxItems && (
+                        <button
+                            onClick={() => setExpandedView(!expandedView)}
+                            className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
+                        >
+                            {expandedView ? "Show Less" : "View All"}
+                            <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -99,7 +151,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                         <BookmarkCheck className="h-4 w-4 text-[#1e628c]" />
                                     </button>
                                 </div>
-                                {/* Description removed */}
                             </div>
                             <div className="mt-1 flex items-center justify-between">
                                 <span
@@ -147,11 +198,9 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                 </div>
             )}
 
-            {/* Exercise Details Modal */}
             {selectedExercise && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={closeExerciseDetails}>
                     <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Modal Header with Image */}
                         <div className="relative h-56 w-full">
                             <img 
                                 src={selectedExercise.image} 
@@ -159,7 +208,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 className="h-full w-full object-cover"
                             />
                             
-                            {/* Category Badge */}
                             <div 
                                 className="absolute left-4 top-4 rounded-full px-3 py-1 text-sm font-semibold text-white"
                                 style={{
@@ -171,7 +219,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 {selectedExercise.category}
                             </div>
                             
-                            {/* Close Button */}
                             <button 
                                 className="absolute right-4 top-4 rounded-full bg-white/80 p-2 text-slate-800 hover:bg-white"
                                 onClick={closeExerciseDetails}
@@ -182,7 +229,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 </svg>
                             </button>
                             
-                            {/* Save Button */}
                             <button
                                 onClick={(e) => handleRemove(e, selectedExercise)}
                                 className="absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors hover:bg-slate-50"
@@ -191,7 +237,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 <span>Saved</span>
                             </button>
                             
-                            {/* Difficulty indicator */}
                             <div className="absolute left-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-medium shadow-md">
                                 <div className="flex items-center gap-1">
                                     {[1, 2, 3].map((level) => (
@@ -218,12 +263,10 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                             </div>
                         </div>
                         
-                        {/* Modal Content */}
                         <div className="p-6">
                             <h2 className="text-2xl font-bold text-slate-900">{selectedExercise.title}</h2>
                             <p className="mt-2 text-slate-600">{selectedExercise.description}</p>
                             
-                            {/* Exercise Recommendation */}
                             <div className="mt-6 grid grid-cols-2 gap-4">
                                 <div className="rounded-lg bg-slate-50 p-4">
                                     <h3 className="text-sm font-semibold text-slate-900">Sets</h3>
@@ -235,7 +278,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 </div>
                             </div>
                             
-                            {/* Tips Section */}
                             <div className="mt-6">
                                 <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e628c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -255,7 +297,6 @@ export const SavedExercises = ({ maxItems = 4 }) => {
                                 </ul>
                             </div>
                             
-                            {/* Footer */}
                             <div className="mt-8 border-t border-slate-200 pt-4">
                                 <button
                                     className="w-full rounded-lg bg-[#1e628c] py-3 font-medium text-white transition-colors hover:bg-[#174e70]"

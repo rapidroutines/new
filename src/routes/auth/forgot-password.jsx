@@ -20,14 +20,11 @@ const ForgotPasswordPage = () => {
         }
         
         try {
-            // Call the forgotPassword function from auth context
             const success = await forgotPassword(email);
             
-            // Mark as submitted and successful
             setIsSubmitted(true);
             setIsSuccess(true);
         } catch (err) {
-            // If there's an error, show it
             setError(err?.message || "Failed to send password reset email. Please try again.");
             setIsSubmitted(false);
             setIsSuccess(false);

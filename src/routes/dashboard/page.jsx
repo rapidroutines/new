@@ -14,11 +14,9 @@ const DashboardPage = () => {
   
   return (
     <div className="relative flex flex-col min-h-screen">
-      {/* Auth overlay only for the dashboard when not authenticated */}
       {!isAuthenticated && <AuthOverlay title="Dashboard" />}
       
       <div className="flex-grow flex flex-col gap-4 sm:gap-6 p-4">
-        {/* Welcome Banner - Responsive text sizes */}
         <div className="rounded-xl py-6 px-4 sm:py-8 sm:px-6 text-white" style={{ backgroundColor: brandColor }}>
           <h1 className="text-2xl sm:text-3xl font-bold">Welcome to RapidRoutines AI</h1>
           <p className="mt-3 sm:mt-4 text-sm sm:text-base text-white/90">
@@ -26,7 +24,6 @@ const DashboardPage = () => {
           </p>
         </div>
 
-        {/* Grid layout for main content - Responsive grid */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
           <div className="rounded-xl border-2 border-slate-400 bg-white shadow-sm">
             <ExerciseLog maxItems={isMobile ? 3 : (isTablet ? 4 : 6)} />
@@ -37,13 +34,11 @@ const DashboardPage = () => {
           </div>
         </div>
         
-        {/* Recent Chatbot Chats Section */}
         <div className="rounded-xl border-2 border-slate-400 bg-white shadow-sm">
           <RecentChatbotChats maxItems={isMobile ? 1 : 2} />
         </div>
       </div>
       
-      {/* Footer */}
       <Footer />
     </div>
   );

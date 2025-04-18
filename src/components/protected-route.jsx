@@ -6,7 +6,6 @@ export const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
 
-    // Show loading state if still checking authentication
     if (isLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-slate-100">
@@ -15,12 +14,10 @@ export const ProtectedRoute = ({ children }) => {
         );
     }
 
-    // If not authenticated, redirect to sign-in with return URL
     if (!isAuthenticated) {
         return <Navigate to="/signin" state={{ from: location.pathname }} replace />;
     }
 
-    // If authenticated, render the protected content
     return children;
 };
 
