@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Footer } from "@/layouts/footer";
 import { X, Info, CheckCircle, Lock, RefreshCw } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { useRapidTree } from "@/contexts/rapidtree-context";
+import { useAuth } from "@/contexts/auth-context";
+import { LimitedFunctionalityBanner } from "@/components/limited-functionality-banner";
 
 const initializeExerciseCategories = () => {
     const categories = {
@@ -121,12 +124,17 @@ const initializeExerciseCategories = () => {
     return categories;
 };
 
-const RapidTreePage = () => {
+const RapidTreePage = ({ limited = false }) => {
     const [activeCategory, setActiveCategory] = useState('push');
     const [exercises, setExercises] = useState(initializeExerciseCategories());
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [totalProgress, setTotalProgress] = useState(0);
+    const [notification, setNotification] = useState(null);
+    
+    const { treeProgress, updateTreeProgress, resetTreeProgress, isLoading } = useRapidTree();
+    const { isAuthenticated } = useAuth();
 
+    // Calculate total progress whenever exercises state changes
     useEffect(() => {
         let completedCount = 0;
         let totalCount = 0;
@@ -144,28 +152,36 @@ const RapidTreePage = () => {
         setTotalProgress(percentage);
     }, [exercises]);
 
+    // Load exercises from context provider when component mounts
     useEffect(() => {
-        const savedProgress = localStorage.getItem('rapidTreeProgress');
-        if (savedProgress) {
+        if (isLoading) return;
+        
+        const loadSavedProgress = () => {
+            if (Object.keys(treeProgress).length === 0) {
+                // No saved progress, use default
+                setExercises(initializeExerciseCategories());
+                return;
+            }
+            
             try {
-                const parsedProgress = JSON.parse(savedProgress);
                 const updatedExercises = initializeExerciseCategories();
-
-                Object.keys(parsedProgress).forEach(category => {
+                
+                Object.keys(treeProgress).forEach(category => {
                     if (updatedExercises[category]) {
-                        parsedProgress[category].forEach(savedExercise => {
+                        treeProgress[category].forEach(savedExercise => {
                             const index = updatedExercises[category].findIndex(ex => ex.id === savedExercise.id);
                             if (index !== -1) {
                                 updatedExercises[category][index].isCompleted = savedExercise.isCompleted;
                             }
                         });
-
+                        
+                        // Update locked status based on completions
                         for (let i = 0; i < updatedExercises[category].length; i++) {
                             if (i === 0) {
                                 updatedExercises[category][i].isLocked = false;
                                 continue;
                             }
-
+                            
                             if (updatedExercises[category][i-1].isCompleted) {
                                 updatedExercises[category][i].isLocked = false;
                             } else {
@@ -180,17 +196,21 @@ const RapidTreePage = () => {
                         }
                     }
                 });
-
+                
                 setExercises(updatedExercises);
             } catch (error) {
                 console.error('Error loading saved progress:', error);
+                setExercises(initializeExerciseCategories());
             }
-        }
-    }, []);
-
-    const saveProgress = () => {
+        };
+        
+        loadSavedProgress();
+    }, [treeProgress, isLoading]);
+    
+    // Save exercises to context provider
+    const saveProgress = async () => {
         const progressData = {};
-
+        
         Object.keys(exercises).forEach(category => {
             progressData[category] = exercises[category].map(exercise => ({
                 id: exercise.id,
@@ -198,8 +218,20 @@ const RapidTreePage = () => {
                 isLocked: exercise.isLocked
             }));
         });
-
-        localStorage.setItem('rapidTreeProgress', JSON.stringify(progressData));
+        
+        const success = await updateTreeProgress(progressData);
+        
+        if (!success && isAuthenticated) {
+            showNotification("error", "Failed to save progress to your account. Please try again.");
+        }
+    };
+    
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        
+        setTimeout(() => {
+            setNotification(null);
+        }, 5000);
     };
 
     const showExerciseDetails = (category, exerciseId) => {
@@ -210,6 +242,12 @@ const RapidTreePage = () => {
     };
 
     const completeExercise = (category, exerciseId) => {
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to save your progress");
+            setSelectedExercise(null);
+            return;
+        }
+        
         const updatedExercises = {...exercises};
         const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
 
@@ -224,9 +262,16 @@ const RapidTreePage = () => {
         setExercises(updatedExercises);
         setSelectedExercise(null);
         saveProgress();
+        showNotification("success", "Exercise completed and progress saved!");
     };
 
     const resetExercise = (category, exerciseId) => {
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to modify your progress");
+            setSelectedExercise(null);
+            return;
+        }
+        
         const updatedExercises = {...exercises};
         const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
 
@@ -253,6 +298,7 @@ const RapidTreePage = () => {
             setExercises(updatedExercises);
             setSelectedExercise(null);
             saveProgress();
+            showNotification("success", "Progress reset successfully!");
         } else {
             setSelectedExercise(null);
         }
@@ -268,6 +314,27 @@ const RapidTreePage = () => {
         return !hasNextExercise || (hasNextExercise && 
             !exercises[category][nextExerciseIndex].isLocked && 
             !exercises[category][nextExerciseIndex].isCompleted);
+    };
+
+    const resetAllExercises = async () => {
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to reset all progress");
+            return;
+        }
+        
+        if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
+            const freshExercises = initializeExerciseCategories();
+            setExercises(freshExercises);
+            setTotalProgress(0);
+            
+            const success = await resetTreeProgress();
+            
+            if (success) {
+                showNotification("success", "All progress has been reset");
+            } else {
+                showNotification("error", "Failed to reset progress. Please try again.");
+            }
+        }
     };
 
     const getExerciseDescription = (exerciseId) => {
@@ -472,17 +539,43 @@ const RapidTreePage = () => {
         return tips[exerciseId] || ['Maintain proper form', 'Focus on controlled movement', 'Breathe steadily throughout'];
     };
 
-    const resetAllExercises = () => {
-        if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
-            const freshExercises = initializeExerciseCategories();
-            setExercises(freshExercises);
-            setTotalProgress(0);
-            localStorage.removeItem('rapidTreeProgress');
-        }
-    };
+    if (isLoading) {
+        return (
+            <div className="flex h-40 items-center justify-center rounded-lg bg-white p-6">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#1e628c]"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-y-6">
+            {limited && !isAuthenticated && (
+                <LimitedFunctionalityBanner featureName="RapidTree progression tracker" />
+            )}
+            
+            {notification && (
+                <div 
+                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                        notification.type === "success" ? "bg-green-100 text-green-800" : 
+                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                        "bg-red-100 text-red-800"
+                    }`}
+                >
+                    <div className="flex items-center">
+                        {notification.type === "success" ? (
+                            <div className="mr-2 rounded-full bg-green-200 p-1">
+                                <CheckCircle className="h-4 w-4" />
+                            </div>
+                        ) : notification.type === "warning" ? (
+                            <Info className="mr-2 h-5 w-5" />
+                        ) : (
+                            <X className="mr-2 h-5 w-5" />
+                        )}
+                        {notification.message}
+                    </div>
+                </div>
+            )}
+            
             <div className="flex justify-end items-center">
                 <button 
                     onClick={resetAllExercises}
@@ -649,6 +742,10 @@ const RapidTreePage = () => {
             </div>
         </div>
     );
+};
+
+RapidTreePage.propTypes = {
+    limited: PropTypes.bool
 };
 
 export default RapidTreePage;
