@@ -7,6 +7,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { ExerciseProvider } from '@/contexts/exercise-context'
 import { ChatbotProvider } from '@/contexts/chatbot-context'
 import { SavedExercisesProvider } from '@/contexts/saved-exercises-context'
+import { RapidTreeProvider } from '@/contexts/rapidtree-context'
 
 const RootProvider = ({ children }) => (
   <StrictMode>
@@ -15,7 +16,9 @@ const RootProvider = ({ children }) => (
         <SavedExercisesProvider>
           <ExerciseProvider>
             <ChatbotProvider>
-              {children}
+              <RapidTreeProvider>
+                {children}
+              </RapidTreeProvider>
             </ChatbotProvider>
           </ExerciseProvider>
         </SavedExercisesProvider>
