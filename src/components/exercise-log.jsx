@@ -1,9 +1,12 @@
 import { useExercises } from "@/contexts/exercise-context";
 import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { LimitedFunctionalityBanner } from "@/components/limited-functionality-banner";
 
-export const ExerciseLog = ({ maxItems = 5 }) => {
+export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     const { getExercises, deleteExercisesByIds, deleteAllExercises, isLoading } = useExercises();
+    const { isAuthenticated } = useAuth();
     const [expandedView, setExpandedView] = useState(false);
     const [exercises, setExercises] = useState([]);
     const [groupedExercises, setGroupedExercises] = useState([]);
@@ -109,6 +112,11 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
     const handleDeleteExerciseGroup = async (e, exerciseGroup) => {
         e.stopPropagation();
         
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to delete exercises");
+            return;
+        }
+        
         if (confirm(`Are you sure you want to delete the entire ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps from ${new Date(exerciseGroup.timestamp).toLocaleDateString()}?`)) {
             try {
                 // First remove the card from UI immediately for better user feedback
@@ -142,6 +150,11 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
     };
     
     const handleDeleteAllExercises = async () => {
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to delete exercises");
+            return;
+        }
+        
         if (confirm("Are you sure you want to delete ALL exercise records? This cannot be undone.")) {
             try {
                 // Update UI immediately for better feedback
@@ -190,27 +203,20 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
         );
     }
     
-    if (!exercises || exercises.length === 0) {
-        return (
-            <div className="rounded-xl bg-white p-6 shadow-md">
-                <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-xl font-bold">Exercise Log</h2>
-                </div>
-                <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
-                    <DumbbellIcon className="mb-2 h-8 w-8 text-slate-400" />
-                    <p className="text-slate-600">No exercise records found.</p>
-                    <p className="text-sm text-slate-500">Complete exercises with RepBot to see your activity here.</p>
-                </div>
-            </div>
-        );
-    }
-    
     return (
         <div className="rounded-xl bg-white p-6 shadow-md">
+            {limited && !isAuthenticated && (
+                <div className="mb-4">
+                    <LimitedFunctionalityBanner featureName="exercise log" />
+                </div>
+            )}
+            
             {notification && (
                 <div 
                     className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
-                        notification.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        notification.type === "success" ? "bg-green-100 text-green-800" : 
+                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                        "bg-red-100 text-red-800"
                     }`}
                 >
                     {notification.type === "success" ? (
@@ -220,6 +226,11 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </div>
+                            {notification.message}
+                        </div>
+                    ) : notification.type === "warning" ? (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
                             {notification.message}
                         </div>
                     ) : (
@@ -255,57 +266,67 @@ export const ExerciseLog = ({ maxItems = 5 }) => {
                 </div>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                {groupedExercises.map((group) => (
-                    <div key={group.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
-                                        <DumbbellIcon className="h-4 w-4" />
+            {(!exercises || exercises.length === 0) ? (
+                <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                    <DumbbellIcon className="mb-2 h-8 w-8 text-slate-400" />
+                    <p className="text-slate-600">No exercise records found.</p>
+                    <p className="text-sm text-slate-500">Complete exercises with RepBot to see your activity here.</p>
+                </div>
+            ) : (
+                <>
+                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                        {groupedExercises.map((group) => (
+                            <div key={group.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
+                                                <DumbbellIcon className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium text-slate-900">
+                                                    {formatExerciseType(group.exerciseType)}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={(e) => handleDeleteExerciseGroup(e, group)}
+                                            className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                            title="Delete this exercise record"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
                                     </div>
-                                    <div>
-                                        <h3 className="font-medium text-slate-900">
-                                            {formatExerciseType(group.exerciseType)}
-                                        </h3>
+                                </div>
+                                <div className="px-4 py-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold text-[#1e628c]">
+                                                {group.totalReps}
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                                Total Reps
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>{formatDate(group.timestamp)}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={(e) => handleDeleteExerciseGroup(e, group)}
-                                    className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                    title="Delete this exercise record"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
                             </div>
-                        </div>
-                        <div className="px-4 py-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-2xl font-bold text-[#1e628c]">
-                                        {group.totalReps}
-                                    </span>
-                                    <span className="text-xs text-slate-500">
-                                        Total Reps
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{formatDate(group.timestamp)}</span>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
-                ))}
-            </div>
-            
-            {!expandedView && groupedExercises.length > maxItems && groupedExercises.length > 1 && (
-                <button
-                    onClick={() => setExpandedView(true)}
-                    className="mt-4 w-full rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                    Show All ({groupedExercises.length}) Exercise Sessions
-                </button>
+                    
+                    {!expandedView && groupedExercises.length > maxItems && groupedExercises.length > 1 && (
+                        <button
+                            onClick={() => setExpandedView(true)}
+                            className="mt-4 w-full rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                            Show All ({groupedExercises.length}) Exercise Sessions
+                        </button>
+                    )}
+                </>
             )}
         </div>
     );
