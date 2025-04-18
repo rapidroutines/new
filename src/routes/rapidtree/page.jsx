@@ -550,7 +550,6 @@ const RapidTreePage = ({ limited = false }) => {
     return (
         <div className="flex flex-col gap-y-6">
             {limited && !isAuthenticated && (
-                <LimitedFunctionalityBanner featureName="RapidTree progression tracker" />
             )}
             
             {notification && (
