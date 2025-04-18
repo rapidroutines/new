@@ -11,7 +11,6 @@ export const ExerciseProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
-  // Load exercises from server when component mounts
   useEffect(() => {
     const fetchExercises = async () => {
       if (!isAuthenticated) {
@@ -35,7 +34,6 @@ export const ExerciseProvider = ({ children }) => {
     fetchExercises();
   }, [isAuthenticated]);
 
-  // Add a new exercise
   const addExercise = async (exerciseData) => {
     // Create a unique ID for this exercise
     const newExercise = {
@@ -63,7 +61,7 @@ export const ExerciseProvider = ({ children }) => {
         return false;
       }
     } else {
-      // If not authenticated, we don't save the data
+      // If not authenticated, we won't save the data
       console.log("Exercise not saved: User not authenticated");
       return false;
     }
@@ -109,7 +107,6 @@ export const ExerciseProvider = ({ children }) => {
     }
   };
 
-  // Delete all exercises
   const deleteAllExercises = async () => {
     if (!isAuthenticated) return false;
 
@@ -127,36 +124,12 @@ export const ExerciseProvider = ({ children }) => {
     }
   };
 
-  // Get exercises (sorted by timestamp, with optional limit)
   const getExercises = (count = null) => {
     const sortedExercises = [...exercises].sort((a, b) => 
       new Date(b.timestamp) - new Date(a.timestamp)
     );
     
     return count ? sortedExercises.slice(0, count) : sortedExercises;
-  };
-
-  // For the iframe to use this context
-  const syncExercisesWithIframe = async (iframeRef) => {
-    if (!iframeRef || !iframeRef.current) return false;
-    
-    // Send user token to iframe if authenticated
-    if (isAuthenticated) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        iframeRef.current.contentWindow.postMessage({
-          type: 'loadUserData',
-          token: token
-        }, '*');
-        return true;
-      }
-    } else {
-      // Clear iframe data if not authenticated
-      iframeRef.current.contentWindow.postMessage({
-        type: 'clearUserData'
-      }, '*');
-    }
-    return false;
   };
 
   const value = {
@@ -166,7 +139,6 @@ export const ExerciseProvider = ({ children }) => {
     deleteExercise,
     deleteExercisesByIds,
     deleteAllExercises,
-    syncExercisesWithIframe,
     isLoading
   };
 
