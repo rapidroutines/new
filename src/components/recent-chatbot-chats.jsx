@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Sparkles, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { MessageSquare, ChevronRight, Sparkles, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useChatbot } from "@/contexts/chatbot-context";
 
 export const RecentChatbotChats = ({ maxItems = 2 }) => {
@@ -67,6 +67,7 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
             <div className="rounded-xl bg-white p-6 shadow-md">
                 <h2 className="mb-4 text-xl font-bold">Recent Chatbot Chats</h2>
                 <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                    <MessageSquare className="mb-2 h-8 w-8 text-slate-400" />
                     <p className="text-slate-600">You haven't had any chats with the AI assistant yet.</p>
                     <Link to="/chatbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Start a new conversation
@@ -137,6 +138,7 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
                         <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
                                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#1e628c]/10 text-[#1e628c]">
+                                    <MessageSquare className="h-5 w-5" />
                                 </div>
                                 <div>
                                     <h3 className="font-medium text-slate-900">{chat.summary.title}</h3>
