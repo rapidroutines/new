@@ -262,12 +262,12 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             </div>
             
             {(!exercises || exercises.length === 0) ? (
-                <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
                     <p className="text-slate-600">No RepBot records found.</p>
                     <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Go to RepBot
                     </Link>
-                 </div>
+                </div>
             ) : (
                 <>
                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
