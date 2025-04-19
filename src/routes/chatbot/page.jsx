@@ -127,7 +127,7 @@ const ChatbotPage = () => {
             </div>
             
             <div className="text-center text-sm text-slate-600">
-                <p>Your chat conversations are automatically saved when you finish chatting if you are signed in.</p>
+                <p>Your chats are automatically saved if you are signed in.</p>
             </div>
 
             <Footer />
