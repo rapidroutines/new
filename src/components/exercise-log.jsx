@@ -241,12 +241,6 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Exercise Log</h2>
                 <div className="flex items-center gap-3">
-                    <Link
-                        to="/repbot"
-                        className="text-sm font-medium text-[#1e628c] hover:underline"
-                    >
-                        Go to RepBot
-                    </Link>
                     {exercises.length > 0 && (
                         <button
                             onClick={handleDeleteAllExercises}
@@ -273,6 +267,9 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     <DumbbellIcon className="mb-2 h-8 w-8 text-slate-400" />
                     <p className="text-slate-600">No exercise records found.</p>
                     <p className="text-sm text-slate-500">Complete exercises with RepBot to see your activity here.</p>
+                    <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
+                        Go to RepBot
+                    </Link>
                 </div>
             ) : (
                 <>
@@ -328,6 +325,15 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                             Show All ({groupedExercises.length}) Exercise Sessions
                         </button>
                     )}
+                    
+                    <div className="mt-4 text-center">
+                        <Link 
+                            to="/repbot"
+                            className="text-sm font-medium text-[#1e628c] hover:underline"
+                        >
+                            Go to RepBot
+                        </Link>
+                    </div>
                 </>
             )}
         </div>
