@@ -159,6 +159,34 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    const deleteAccount = async () => {
+        try {
+            setError(null);
+            setIsLoading(true);
+            
+            const res = await axios.delete("/api/auth/delete-account");
+            
+            if (res.status === 200) {
+                // After successful deletion, perform full cleanup
+                localStorage.removeItem("savedExercises_data");
+                localStorage.removeItem("exercises_data");
+                localStorage.removeItem("chatbot_history_data");
+                localStorage.removeItem("token");
+                delete axios.defaults.headers.common["Authorization"];
+                setUser(null);
+                setIsAuthenticated(false);
+                return true;
+            }
+            
+            return false;
+        } catch (err) {
+            setError(err.response?.data?.message || "Account deletion failed");
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem("token");
         delete axios.defaults.headers.common["Authorization"];
@@ -177,7 +205,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         forgotPassword,
         resetPassword,
-        updateProfile
+        updateProfile,
+        deleteAccount
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
