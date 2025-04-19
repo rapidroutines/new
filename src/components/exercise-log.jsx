@@ -2,6 +2,7 @@ import { useExercises } from "@/contexts/exercise-context";
 import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { Link } from "react-router-dom";
 
 export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     const { getExercises, deleteExercisesByIds, deleteAllExercises, isLoading } = useExercises();
@@ -240,6 +241,12 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-bold">Exercise Log</h2>
                 <div className="flex items-center gap-3">
+                    <Link
+                        to="/repbot"
+                        className="text-sm font-medium text-[#1e628c] hover:underline"
+                    >
+                        Go to RepBot
+                    </Link>
                     {exercises.length > 0 && (
                         <button
                             onClick={handleDeleteAllExercises}
