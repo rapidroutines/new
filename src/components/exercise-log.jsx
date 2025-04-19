@@ -1,5 +1,5 @@
 import { useExercises } from "@/contexts/exercise-context";
-import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Link } from "react-router-dom";
@@ -278,7 +278,6 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
-                                                <DumbbellIcon className="h-5 w-5" />
                                             </div>
                                             <div>
                                                 <h3 className="font-medium text-slate-900">
