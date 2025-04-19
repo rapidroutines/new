@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Footer } from "@/layouts/footer";
 import { cn } from "@/utils/cn";
-import { BookmarkPlus, BookmarkCheck, Search, X, Info } from "lucide-react";
+import { BookmarkPlus, BookmarkCheck, Search, X, Info, AlertCircle } from "lucide-react";
 import { useSavedExercises } from "@/contexts/saved-exercises-context";
 import { useAuth } from "@/contexts/auth-context";
 import pushUpsImage from "@/assets/pseudo-planche-push-ups.png";
@@ -441,13 +441,23 @@ const LibraryPage = () => {
     const [filteredExercises, setFilteredExercises] = useState(exercises);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedExercise, setSelectedExercise] = useState(null);
+    const [notification, setNotification] = useState(null);
     const { isAuthenticated } = useAuth();
     const { addSavedExercise, removeSavedExercise, isSaved } = useSavedExercises();
+    
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        
+        setTimeout(() => {
+            setNotification(null);
+        }, 5000);
+    };
     
     const handleSaveToggle = (e, exercise) => {
         e.stopPropagation();
         
         if (!isAuthenticated) {
+            showNotification("warning", "Sign in to save exercises");
             return;
         }
         
@@ -490,6 +500,37 @@ const LibraryPage = () => {
 
     return (
         <div className="flex flex-col gap-y-4">
+            {notification && (
+                <div 
+                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                        notification.type === "success" ? "bg-green-100 text-green-800" : 
+                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                        "bg-red-100 text-red-800"
+                    }`}
+                >
+                    {notification.type === "success" ? (
+                        <div className="flex items-center">
+                            <div className="mr-2 rounded-full bg-green-200 p-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            {notification.message}
+                        </div>
+                    ) : notification.type === "warning" ? (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
+                            {notification.message}
+                        </div>
+                    ) : (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
+                            {notification.message}
+                        </div>
+                    )}
+                </div>
+            )}
+            
             <div className="flex justify-center mb-6 mt-2">
                 <div className="relative w-full max-w-md">
                     <div className="flex h-10 w-full items-center overflow-hidden rounded-md border border-slate-300 bg-white">
@@ -677,8 +718,7 @@ const LibraryPage = () => {
                             
                             <button
                                 onClick={(e) => handleSaveToggle(e, selectedExercise)}
-                                className={`absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors hover:bg-slate-50 ${!isAuthenticated ? "opacity-50 cursor-not-allowed" : ""}`}
-                                disabled={!isAuthenticated}
+                                className={`absolute right-4 bottom-4 flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-medium shadow-md transition-colors hover:bg-slate-50`}
                             >
                                 {isSaved(selectedExercise.id) ? (
                                     <>
@@ -687,7 +727,7 @@ const LibraryPage = () => {
                                     </>
                                 ) : (
                                     <>
-                                        <BookmarkPlus className="h-4 w-4" />
+                                        <BookmarkPlus className={`h-4 w-4 ${!isAuthenticated ? "text-slate-400" : ""}`} />
                                         <span>{isAuthenticated ? "Save" : "Sign in to save"}</span>
                                     </>
                                 )}
