@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Footer } from "@/layouts/footer";
 import { useAuth } from "@/contexts/auth-context";
 import axios from "axios";
+import { AlertCircle } from "lucide-react";
 
 const ExerciseTrackerPage = ({ limited = false }) => {
     const [isLoading, setIsLoading] = useState(true);
     const { isAuthenticated, user } = useAuth();
     const [trackerExercises, setTrackerExercises] = useState([]);
+    const [notification, setNotification] = useState(null);
     
     useEffect(() => {
         if (isAuthenticated) {
@@ -63,6 +65,13 @@ const ExerciseTrackerPage = ({ limited = false }) => {
         }
     };
     
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        setTimeout(() => {
+            setNotification(null);
+        }, 3000);
+    };
+    
     useEffect(() => {
         // Handle messages from the iframe
         const messageHandler = (event) => {
@@ -112,6 +121,11 @@ const ExerciseTrackerPage = ({ limited = false }) => {
                             removeExerciseFromServer(event.data.exerciseId);
                         }
                         break;
+                        
+                    case "exerciseNotAuthenticated":
+                        // Show notification when user is not authenticated
+                        showNotification("warning", "Sign in to save exercises");
+                        break;
                 }
             }
         };
@@ -125,6 +139,31 @@ const ExerciseTrackerPage = ({ limited = false }) => {
     
     return (
         <div className="flex flex-col min-h-screen">
+            {notification && (
+                <div 
+                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                        notification.type === "success" ? "bg-green-100 text-green-800" : 
+                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                        "bg-red-100 text-red-800"
+                    }`}
+                >
+                    <div className="flex items-center">
+                        {notification.type === "warning" ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                        ) : (
+                            <div className="mr-2 rounded-full bg-green-200 p-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                        )}
+                        {notification.message}
+                    </div>
+                </div>
+            )}
+            
             <div className="flex-grow flex flex-col gap-y-4 p-0 md:p-2">
                 <div className="relative rounded-lg shadow-sm overflow-hidden flex-grow h-[calc(100vh-120px)]">
                     {isLoading && (
