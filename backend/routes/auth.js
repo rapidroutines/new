@@ -329,4 +329,25 @@ router.put('/update-profile', auth, async (req, res) => {
   }
 });
 
+// @route   DELETE /api/auth/delete-account
+// @desc    Delete user account and all associated data
+// @access  Private
+router.delete('/delete-account', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // First delete all user data
+    const UserData = require('../models/user-data');
+    await UserData.findOneAndDelete({ user: userId });
+    
+    // Then delete the user account itself
+    await User.findByIdAndDelete(userId);
+    
+    res.status(200).json({ message: 'Account and all associated data deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting user account:', err.message);
+    res.status(500).json({ message: 'Server error deleting account' });
+  }
+});
+
 module.exports = router;
