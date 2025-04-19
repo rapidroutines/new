@@ -67,7 +67,6 @@ export const RecentChatbotChats = ({ maxItems = 2 }) => {
             <div className="rounded-xl bg-white p-6 shadow-md">
                 <h2 className="mb-4 text-xl font-bold">Recent Chatbot Chats</h2>
                 <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
-                    <MessageSquare className="mb-2 h-8 w-8 text-slate-400" />
                     <p className="text-slate-600">You haven't had any chats with the AI assistant yet.</p>
                     <Link to="/chatbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Start a new conversation
