@@ -1,5 +1,5 @@
 import { useExercises } from "@/contexts/exercise-context";
-import { Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { Link } from "react-router-dom";
@@ -263,6 +263,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             
             {(!exercises || exercises.length === 0) ? (
                 <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                    <DumbbellIcon className="mb-2 h-9 w-9 text-slate-400" />
                     <p className="text-slate-600">No RepBot records found.</p>
                     <p className="text-sm text-slate-500">Complete exercises using the RepBot to see your activity here.</p>
                     <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
@@ -278,6 +279,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
+                                                <DumbbellIcon className="h-5 w-5" />
                                             </div>
                                             <div>
                                                 <h3 className="font-medium text-slate-900">
