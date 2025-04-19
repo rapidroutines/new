@@ -48,14 +48,14 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     id: groupKey,
                     exerciseType: typeKey,
                     count: 1,
-                    totalReps: exercise.count,
+                    totalReps: Number(exercise.count) || 0,  // Ensure it's a number
                     timestamp: exercise.timestamp,
                     exercises: [exercise]
                 });
             } else {
                 const group = groups.get(groupKey);
                 group.count += 1;
-                group.totalReps += exercise.count;
+                group.totalReps += Number(exercise.count) || 0;  // Ensure it's a number
                 group.exercises.push(exercise);
                 
                 if (new Date(exercise.timestamp) > new Date(group.timestamp)) {
