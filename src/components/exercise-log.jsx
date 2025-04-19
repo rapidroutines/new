@@ -9,7 +9,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     const { isAuthenticated } = useAuth();
     const [expandedView, setExpandedView] = useState(false);
     const [exercises, setExercises] = useState([]);
-    const [displayedExercises, setDisplayedExercises] = useState([]);
+    const [groupedExercises, setGroupedExercises] = useState([]);
     const [refreshKey, setRefreshKey] = useState(0);
     const [notification, setNotification] = useState(null);
     
@@ -18,14 +18,9 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             const allExercises = getExercises();
             setExercises(allExercises);
             
-            // Sort by timestamp (newest first)
-            const sortedExercises = [...allExercises].sort((a, b) => 
-                new Date(b.timestamp) - new Date(a.timestamp)
-            );
-            
-            // Display either all exercises or limited by maxItems
-            const displayExercises = expandedView ? sortedExercises : sortedExercises.slice(0, maxItems);
-            setDisplayedExercises(displayExercises);
+            const grouped = groupExercisesByTypeAndDate(allExercises);
+            const limitedGroups = expandedView ? grouped : grouped.slice(0, maxItems);
+            setGroupedExercises(limitedGroups);
         };
         
         loadExercises();
@@ -36,6 +31,43 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         
         return () => clearInterval(refreshInterval);
     }, [getExercises, expandedView, maxItems, refreshKey]);
+    
+    const groupExercisesByTypeAndDate = (exerciseList) => {
+        if (!exerciseList || exerciseList.length === 0) return [];
+        
+        const groups = new Map();
+        
+        exerciseList.forEach(exercise => {
+            const date = new Date(exercise.timestamp);
+            const dateKey = date.toDateString(); 
+            const typeKey = exercise.exerciseType;
+            const groupKey = `${dateKey}_${typeKey}`;
+            
+            if (!groups.has(groupKey)) {
+                groups.set(groupKey, {
+                    id: groupKey,
+                    exerciseType: typeKey,
+                    count: 1,
+                    totalReps: exercise.count,
+                    timestamp: exercise.timestamp,
+                    exercises: [exercise]
+                });
+            } else {
+                const group = groups.get(groupKey);
+                group.count += 1;
+                group.totalReps += exercise.count;
+                group.exercises.push(exercise);
+                
+                if (new Date(exercise.timestamp) > new Date(group.timestamp)) {
+                    group.timestamp = exercise.timestamp;
+                }
+            }
+        });
+        
+        return Array.from(groups.values()).sort((a, b) => 
+            new Date(b.timestamp) - new Date(a.timestamp)
+        );
+    };
     
     const formatDate = (isoDate) => {
         const date = new Date(isoDate);
@@ -77,7 +109,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         return names[exerciseType] || exerciseType;
     };
     
-    const handleDeleteExercise = async (e, exercise) => {
+    const handleDeleteExerciseGroup = async (e, exerciseGroup) => {
         e.stopPropagation();
         
         if (limited && !isAuthenticated) {
@@ -85,29 +117,32 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             return;
         }
         
-        if (confirm(`Are you sure you want to delete this ${formatExerciseType(exercise.exerciseType)} session with ${exercise.count} reps?`)) {
+        if (confirm(`Are you sure you want to delete the entire ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps from ${new Date(exerciseGroup.timestamp).toLocaleDateString()}?`)) {
             try {
-                // First remove the exercise from UI immediately for better user feedback
-                setDisplayedExercises(prevExercises => 
-                    prevExercises.filter(ex => ex.id !== exercise.id)
+                // First remove the card from UI immediately for better user feedback
+                setGroupedExercises(prevGroups => 
+                    prevGroups.filter(group => group.id !== exerciseGroup.id)
                 );
                 
-                // Delete the exercise
-                const success = await deleteExercisesByIds([exercise.id]);
+                // Get all exercise IDs in this group
+                const exerciseIdsToDelete = exerciseGroup.exercises.map(ex => ex.id);
+                
+                // Delete all exercises in this group using the new batch delete function
+                const success = await deleteExercisesByIds(exerciseIdsToDelete);
                 
                 if (success) {
                     // Update the local exercises state after deletion
                     setExercises(prevExercises => 
-                        prevExercises.filter(ex => ex.id !== exercise.id)
+                        prevExercises.filter(ex => !exerciseIdsToDelete.includes(ex.id))
                     );
                     
-                    showNotification("success", `Deleted ${formatExerciseType(exercise.exerciseType)} session with ${exercise.count} reps`);
+                    showNotification("success", `Deleted ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps`);
                 } else {
                     showNotification("error", "Failed to delete exercise session");
                     handleRefresh(); // Refresh to restore correct state
                 }
             } catch (error) {
-                console.error("Error deleting exercise:", error);
+                console.error("Error deleting exercise group:", error);
                 showNotification("error", "Failed to delete exercise session");
                 handleRefresh(); // Refresh to restore correct state
             }
@@ -123,7 +158,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         if (confirm("Are you sure you want to delete ALL exercise records? This cannot be undone.")) {
             try {
                 // Update UI immediately for better feedback
-                setDisplayedExercises([]);
+                setGroupedExercises([]);
                 
                 // Perform the deletion
                 const success = await deleteAllExercises();
@@ -155,12 +190,9 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         const allExercises = getExercises();
         setExercises(allExercises);
         
-        const sortedExercises = [...allExercises].sort((a, b) => 
-            new Date(b.timestamp) - new Date(a.timestamp)
-        );
-        
-        const displayExercises = expandedView ? sortedExercises : sortedExercises.slice(0, maxItems);
-        setDisplayedExercises(displayExercises);
+        const grouped = groupExercisesByTypeAndDate(allExercises);
+        const limitedGroups = expandedView ? grouped : grouped.slice(0, maxItems);
+        setGroupedExercises(limitedGroups);
     };
     
     if (isLoading) {
@@ -218,7 +250,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                             <span className="hidden sm:inline">Delete All</span>
                         </button>
                     )}
-                    {exercises.length > maxItems && (
+                    {groupedExercises.length > maxItems && (
                         <button
                             onClick={() => setExpandedView(!expandedView)}
                             className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
@@ -241,22 +273,22 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             ) : (
                 <>
                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                        {displayedExercises.map((exercise) => (
-                            <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                        {groupedExercises.map((group) => (
+                            <div key={group.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
                                 <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
-                                            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(exercise.exerciseType)}`}>
+                                            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
                                                 <DumbbellIcon className="h-5 w-5" />
                                             </div>
                                             <div>
                                                 <h3 className="font-medium text-slate-900">
-                                                    {formatExerciseType(exercise.exerciseType)}
+                                                    {formatExerciseType(group.exerciseType)}
                                                 </h3>
                                             </div>
                                         </div>
                                         <button
-                                            onClick={(e) => handleDeleteExercise(e, exercise)}
+                                            onClick={(e) => handleDeleteExerciseGroup(e, group)}
                                             className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
                                             title="Delete this exercise record"
                                         >
@@ -268,15 +300,15 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className="text-2xl font-bold text-[#1e628c]">
-                                                {exercise.count}
+                                                {group.totalReps}
                                             </span>
                                             <span className="text-xs text-slate-500">
-                                                Reps
+                                                Total Reps
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-1 text-xs text-slate-500">
                                             <Calendar className="h-3 w-3" />
-                                            <span>{formatDate(exercise.timestamp)}</span>
+                                            <span>{formatDate(group.timestamp)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -284,12 +316,12 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                         ))}
                     </div>
                     
-                    {!expandedView && exercises.length > maxItems && (
+                    {!expandedView && groupedExercises.length > maxItems && groupedExercises.length > 1 && (
                         <button
                             onClick={() => setExpandedView(true)}
                             className="mt-4 w-full rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-50"
                         >
-                            Show All ({exercises.length}) Exercise Records
+                            Show All ({groupedExercises.length}) Exercise Sessions
                         </button>
                     )}
                     
