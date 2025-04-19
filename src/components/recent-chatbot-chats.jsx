@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MessageSquare, ChevronRight, Sparkles, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { ChevronRight, Sparkles, Trash2, XCircle, AlertCircle } from "lucide-react";
 import { useChatbot } from "@/contexts/chatbot-context";
 
 export const RecentChatbotChats = ({ maxItems = 2 }) => {
