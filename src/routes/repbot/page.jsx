@@ -1,338 +1,148 @@
+import { useState, useEffect, useRef } from "react";
+import { Loader2 } from "lucide-react";
 import { useExercises } from "@/contexts/exercise-context";
-import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/auth-context";
-import { Link } from "react-router-dom";
+import { Footer } from "@/layouts/footer";
 
-export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
-    const { getExercises, deleteExercisesByIds, deleteAllExercises, isLoading } = useExercises();
-    const { isAuthenticated } = useAuth();
-    const [expandedView, setExpandedView] = useState(false);
-    const [exercises, setExercises] = useState([]);
-    const [groupedExercises, setGroupedExercises] = useState([]);
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [notification, setNotification] = useState(null);
+const RepBotPage = () => {
+    const [isLoading, setIsLoading] = useState(true);
+    const { addExercise } = useExercises();
+    const iframeRef = useRef(null);
+    
+    // Keep track of processed exercises by timestamp to avoid duplicates
+    const processedExercises = useRef(new Map());
     
     useEffect(() => {
-        const loadExercises = () => {
-            const allExercises = getExercises();
-            setExercises(allExercises);
-            
-            const grouped = groupExercisesByTypeAndDate(allExercises);
-            const limitedGroups = expandedView ? grouped : grouped.slice(0, maxItems);
-            setGroupedExercises(limitedGroups);
-        };
-        
-        loadExercises();
-        
-        const refreshInterval = setInterval(() => {
-            setRefreshKey(prev => prev + 1);
-        }, 5000); 
-        
-        return () => clearInterval(refreshInterval);
-    }, [getExercises, expandedView, maxItems, refreshKey]);
-    
-    const groupExercisesByTypeAndDate = (exerciseList) => {
-        if (!exerciseList || exerciseList.length === 0) return [];
-        
-        const groups = new Map();
-        
-        exerciseList.forEach(exercise => {
-            const date = new Date(exercise.timestamp);
-            const dateKey = date.toDateString(); 
-            const typeKey = exercise.exerciseType;
-            const groupKey = `${dateKey}_${typeKey}`;
-            
-            if (!groups.has(groupKey)) {
-                groups.set(groupKey, {
-                    id: groupKey,
-                    exerciseType: typeKey,
-                    count: 1,
-                    totalReps: Number(exercise.count) || 0,  // Ensure it's a number
-                    timestamp: exercise.timestamp,
-                    exercises: [exercise]
-                });
-            } else {
-                const group = groups.get(groupKey);
-                group.count += 1;
-                group.totalReps += Number(exercise.count) || 0;  // Ensure it's a number
-                group.exercises.push(exercise);
-                
-                if (new Date(exercise.timestamp) > new Date(group.timestamp)) {
-                    group.timestamp = exercise.timestamp;
-                }
+        const handleMessage = (event) => {
+            // Validate message origin
+            if (
+                event.origin !== "https://render-repbot.vercel.app" && 
+                event.origin !== "https://render-repbot.onrender.com"
+            ) {
+                return;
             }
-        });
-        
-        return Array.from(groups.values()).sort((a, b) => 
-            new Date(b.timestamp) - new Date(a.timestamp)
-        );
-    };
-    
-    const formatDate = (isoDate) => {
-        const date = new Date(isoDate);
-        return new Intl.DateTimeFormat('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: true
-        }).format(date);
-    };
-    
-    const getExerciseColor = (exerciseType) => {
-        const colors = {
-            bicepCurl: "bg-blue-100 text-blue-600",
-            squat: "bg-green-100 text-green-600",
-            pushup: "bg-red-100 text-red-600",
-            shoulderPress: "bg-purple-100 text-purple-600",
-            tricepExtension: "bg-yellow-100 text-yellow-600",
-            lunge: "bg-orange-100 text-orange-600",
-            russianTwist: "bg-indigo-100 text-indigo-600",
-            default: "bg-slate-100 text-slate-600"
-        };
-        
-        return colors[exerciseType] || colors.default;
-    };
-    
-    const formatExerciseType = (exerciseType) => {
-        const names = {
-            bicepCurl: "Bicep Curl",
-            squat: "Squat",
-            pushup: "Push-up",
-            shoulderPress: "Shoulder Press",
-            tricepExtension: "Tricep Extension",
-            lunge: "Lunge",
-            russianTwist: "Russian Twist"
-        };
-        
-        return names[exerciseType] || exerciseType;
-    };
-    
-    const handleDeleteExerciseGroup = async (e, exerciseGroup) => {
-        e.stopPropagation();
-        
-        if (limited && !isAuthenticated) {
-            showNotification("warning", "Sign in to delete exercises");
-            return;
-        }
-        
-        if (confirm(`Are you sure you want to delete the entire ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps from ${new Date(exerciseGroup.timestamp).toLocaleDateString()}?`)) {
-            try {
-                // First remove the card from UI immediately for better user feedback
-                setGroupedExercises(prevGroups => 
-                    prevGroups.filter(group => group.id !== exerciseGroup.id)
-                );
+            
+            if (event.data && event.data.type === "exerciseCompleted") {
+                const { exerciseType, repCount, timestamp } = event.data;
+                const exerciseTimestamp = timestamp || new Date().toISOString();
                 
-                // Get all exercise IDs in this group
-                const exerciseIdsToDelete = exerciseGroup.exercises.map(ex => ex.id);
+                // Create an exercise key based on type, count, and timestamp
+                const exerciseKey = `${exerciseType}-${repCount}-${exerciseTimestamp}`;
                 
-                // Delete all exercises in this group using the new batch delete function
-                const success = await deleteExercisesByIds(exerciseIdsToDelete);
-                
-                if (success) {
-                    // Update the local exercises state after deletion
-                    setExercises(prevExercises => 
-                        prevExercises.filter(ex => !exerciseIdsToDelete.includes(ex.id))
-                    );
+                // Only process if we haven't seen this exact exercise before
+                if (!processedExercises.current.has(exerciseKey)) {
+                    // Log the exercise exactly as received from the RepBot
+                    addExercise({
+                        exerciseType: exerciseType,
+                        count: repCount,
+                        timestamp: exerciseTimestamp
+                    });
                     
-                    showNotification("success", `Deleted ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps`);
-                } else {
-                    showNotification("error", "Failed to delete exercise session");
-                    handleRefresh(); // Refresh to restore correct state
+                    // Mark this exercise as processed
+                    processedExercises.current.set(exerciseKey, true);
+                    
+                    console.log(`Exercise logged: ${exerciseType}, ${repCount} reps at ${exerciseTimestamp}`);
+                    
+                    // Clear old entries to prevent memory buildup (keep last 50)
+                    if (processedExercises.current.size > 50) {
+                        const entries = Array.from(processedExercises.current.entries());
+                        entries.slice(0, entries.length - 50).forEach(([key]) => {
+                            processedExercises.current.delete(key);
+                        });
+                    }
                 }
-            } catch (error) {
-                console.error("Error deleting exercise group:", error);
-                showNotification("error", "Failed to delete exercise session");
-                handleRefresh(); // Refresh to restore correct state
             }
-        }
-    };
-    
-    const handleDeleteAllExercises = async () => {
-        if (limited && !isAuthenticated) {
-            showNotification("warning", "Sign in to delete exercises");
-            return;
-        }
+        };
         
-        if (confirm("Are you sure you want to delete ALL exercise records? This cannot be undone.")) {
+        // Add event listener
+        window.addEventListener("message", handleMessage);
+        
+        // Clean up function
+        return () => {
+            window.removeEventListener("message", handleMessage);
+        };
+    }, [addExercise]);
+    
+    // Handle exercises saved to localStorage by the iframe
+    useEffect(() => {
+        const checkLocalStorageForExercises = () => {
             try {
-                // Update UI immediately for better feedback
-                setGroupedExercises([]);
+                const repbotExerciseKey = "repbot_lastExercise";
+                const storedExercise = localStorage.getItem(repbotExerciseKey);
                 
-                // Perform the deletion
-                const success = await deleteAllExercises();
-                
-                if (success) {
-                    setExercises([]);
-                    showNotification("success", "All exercise records deleted successfully");
-                } else {
-                    showNotification("error", "Failed to delete all exercise records");
-                    handleRefresh(); // Refresh to restore correct state
+                if (storedExercise) {
+                    const exerciseData = JSON.parse(storedExercise);
+                    const exerciseTimestamp = exerciseData.timestamp || new Date().toISOString();
+                    const exerciseKey = `${exerciseData.type}-${exerciseData.count}-${exerciseTimestamp}`;
+                    
+                    // Only process if we haven't seen this exact exercise before
+                    if (!processedExercises.current.has(exerciseKey) && !exerciseData.processed) {
+                        // Log the exercise directly with the exact rep count
+                        addExercise({
+                            exerciseType: exerciseData.type,
+                            count: exerciseData.count,
+                            timestamp: exerciseTimestamp
+                        });
+                        
+                        // Mark as processed
+                        localStorage.setItem(repbotExerciseKey, JSON.stringify({
+                            ...exerciseData,
+                            processed: true
+                        }));
+                        
+                        processedExercises.current.set(exerciseKey, true);
+                        console.log(`Exercise from localStorage logged: ${exerciseData.type}, ${exerciseData.count} reps at ${exerciseTimestamp}`);
+                    }
                 }
             } catch (error) {
-                console.error("Error deleting all exercises:", error);
-                showNotification("error", "Failed to delete all exercise records");
-                handleRefresh();
+                console.error("Error checking localStorage for exercises:", error);
             }
-        }
-    };
-    
-    const showNotification = (type, message) => {
-        setNotification({ type, message });
+        };
         
-        setTimeout(() => {
-            setNotification(null);
-        }, 5000);
-    };
-    
-    const handleRefresh = () => {
-        const allExercises = getExercises();
-        setExercises(allExercises);
+        // Check once initially
+        checkLocalStorageForExercises();
         
-        const grouped = groupExercisesByTypeAndDate(allExercises);
-        const limitedGroups = expandedView ? grouped : grouped.slice(0, maxItems);
-        setGroupedExercises(limitedGroups);
-    };
-    
-    if (isLoading) {
-        return (
-            <div className="flex h-40 items-center justify-center rounded-lg bg-white p-6 shadow-md">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#1e628c]"></div>
-            </div>
-        );
-    }
-    
+        // Check periodically for exercises that might have been saved offline
+        const interval = setInterval(checkLocalStorageForExercises, 2000);
+        
+        return () => clearInterval(interval);
+    }, [addExercise]);
+
     return (
-        <div className="rounded-xl bg-white p-6 shadow-md">
-           
-            {notification && (
-                <div 
-                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
-                        notification.type === "success" ? "bg-green-100 text-green-800" : 
-                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
-                        "bg-red-100 text-red-800"
-                    }`}
-                >
-                    {notification.type === "success" ? (
-                        <div className="flex items-center">
-                            <div className="mr-2 rounded-full bg-green-200 p-1">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                            </div>
-                            {notification.message}
+        <div className="flex flex-col h-[calc(100vh-80px)]">
+            <div className="relative flex-1 w-full overflow-hidden bg-white dark:bg-slate-950 rounded-lg shadow-sm" style={{ minHeight: "600px" }}>
+                {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-10">
+                        <div className="flex flex-col items-center text-center">
+                            <Loader2 className="h-10 w-10 animate-spin text-[#1e628c]" />
+                            <p className="mt-2 text-slate-600 dark:text-slate-300">Loading RepBot...</p>
+                            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">The AI model may take 1-2 minutes to initialize</p>
                         </div>
-                    ) : notification.type === "warning" ? (
-                        <div className="flex items-center">
-                            <AlertCircle className="mr-2 h-5 w-5" />
-                            {notification.message}
-                        </div>
-                    ) : (
-                        <div className="flex items-center">
-                            <AlertCircle className="mr-2 h-5 w-5" />
-                            {notification.message}
-                        </div>
-                    )}
-                </div>
-            )}
-            
-            <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold">RepBot Log</h2>
-                <div className="flex items-center gap-3">
-                    {exercises.length > 0 && (
-                        <button
-                            onClick={handleDeleteAllExercises}
-                            className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
-                            title="Delete all exercise records"
-                        >
-                            <XCircle className="h-4 w-4" />
-                            <span className="hidden sm:inline">Delete All</span>
-                        </button>
-                    )}
-                    {groupedExercises.length > maxItems && (
-                        <button
-                            onClick={() => setExpandedView(!expandedView)}
-                            className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
-                        >
-                            {expandedView ? "Show Less" : "View All"}
-                        </button>
-                    )}
-                </div>
+                    </div>
+                )}
+                
+                <iframe 
+                    ref={iframeRef}
+                    src="https://render-repbot.vercel.app/" 
+                    className="w-full h-full border-0"
+                    title="RepBot AI Exercise Counter"
+                    onLoad={() => {
+                        setIsLoading(false);
+                        // Clear any old processed exercises when iframe reloads
+                        processedExercises.current.clear();
+                    }}
+                    allow="camera; microphone; accelerometer; gyroscope; fullscreen"
+                    allowFullScreen
+                    style={{ borderRadius: '0.5rem' }}
+                />
             </div>
             
-            {(!exercises || exercises.length === 0) ? (
-                <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
-                    <p className="text-slate-600">No RepBot records found.</p>
-                    <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
-                        Go to RepBot
-                    </Link>
-                </div>
-            ) : (
-                <>
-                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-                        {groupedExercises.map((group) => (
-                            <div key={group.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
-                                <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(group.exerciseType)}`}>
-                                                <DumbbellIcon className="h-5 w-5" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-medium text-slate-900">
-                                                    {formatExerciseType(group.exerciseType)}
-                                                </h3>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={(e) => handleDeleteExerciseGroup(e, group)}
-                                            className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                                            title="Delete this exercise record"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="px-4 py-3">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-2xl font-bold text-[#1e628c]">
-                                                {group.totalReps}
-                                            </span>
-                                            <span className="text-xs text-slate-500">
-                                                Total Reps
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                                            <Calendar className="h-3 w-3" />
-                                            <span>{formatDate(group.timestamp)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {!expandedView && groupedExercises.length > maxItems && groupedExercises.length > 1 && (
-                        <button
-                            onClick={() => setExpandedView(true)}
-                            className="mt-4 w-full rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-50"
-                        >
-                            Show All ({groupedExercises.length}) Exercise Sessions
-                        </button>
-                    )}
-                    
-                    <div className="mt-4 text-center">
-                        <Link 
-                            to="/repbot"
-                            className="text-sm font-medium text-[#1e628c] hover:underline"
-                        >
-                            Go to RepBot
-                        </Link>
-                    </div>
-                </>
-            )}
+            <div className="text-center text-sm text-slate-600 mt-3 mb-2">
+                <p>Your exercises are automatically saved as you complete reps if you are signed in.</p>
+            </div>
+            
+            <Footer />
         </div>
     );
 };
+
+export default RepBotPage;
