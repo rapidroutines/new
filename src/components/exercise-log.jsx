@@ -239,7 +239,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             )}
             
             <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold">Exercise Log</h2>
+                <h2 className="text-xl font-bold">RepBot Log</h2>
                 <div className="flex items-center gap-3">
                     {exercises.length > 0 && (
                         <button
@@ -265,8 +265,8 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
             {(!exercises || exercises.length === 0) ? (
                 <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
                     <DumbbellIcon className="mb-2 h-8 w-8 text-slate-400" />
-                    <p className="text-slate-600">No exercise records found.</p>
-                    <p className="text-sm text-slate-500">Complete exercises with RepBot to see your activity here.</p>
+                    <p className="text-slate-600">No RepBot records found.</p>
+                    <p className="text-sm text-slate-500">Complete exercises using the RepBot to see your activity here.</p>
                     <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Go to RepBot
                     </Link>
