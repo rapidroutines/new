@@ -1,161 +1,308 @@
-import { createContext, useState, useContext, useEffect } from "react";
-import PropTypes from "prop-types";
-import { useAuth } from "./auth-context";
-import axios from "axios";
+import { useExercises } from "@/contexts/exercise-context";
+import { DumbbellIcon, Calendar, Trash2, XCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { Link } from "react-router-dom";
 
-const ExerciseContext = createContext({});
-
-export const ExerciseProvider = ({ children }) => {
-  const [exercises, setExercises] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    const fetchExercises = async () => {
-      if (!isAuthenticated) {
-        setExercises([]);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const response = await axios.get("/api/user-data/get-data");
-        setExercises(response.data.exerciseLog || []);
-      } catch (error) {
-        console.error("Error fetching exercise log:", error);
-        setExercises([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchExercises();
-  }, [isAuthenticated]);
-
-  const addExercise = async (exerciseData) => {
-    // Create a unique ID for this exercise
-    const newExercise = {
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-      ...exerciseData
-    };
+export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
+    const { getExercises, deleteExercisesByIds, deleteAllExercises, isLoading } = useExercises();
+    const { isAuthenticated } = useAuth();
+    const [expandedView, setExpandedView] = useState(false);
+    const [exercises, setExercises] = useState([]);
+    const [displayedExercises, setDisplayedExercises] = useState([]);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [notification, setNotification] = useState(null);
     
-    if (isAuthenticated) {
-      try {
-        // Add the new exercise to the existing list
-        const updatedExercises = [...exercises, newExercise];
+    useEffect(() => {
+        const loadExercises = () => {
+            const allExercises = getExercises();
+            setExercises(allExercises);
+            
+            // Sort by timestamp (newest first)
+            const sortedExercises = [...allExercises].sort((a, b) => 
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+            
+            // Display either all exercises or limited by maxItems
+            const displayExercises = expandedView ? sortedExercises : sortedExercises.slice(0, maxItems);
+            setDisplayedExercises(displayExercises);
+        };
         
-        // Save to server
-        await axios.post("/api/user-data/save-data", {
-          dataType: "exerciseLog",
-          data: updatedExercises
-        });
-
-        // Update local state
-        setExercises(updatedExercises);
-        return true;
-      } catch (error) {
-        console.error("Error saving exercise:", error);
-        return false;
-      }
-    } else {
-      // If not authenticated, we won't save the data
-      console.log("Exercise not saved: User not authenticated");
-      return false;
-    }
-  };
-
-  // Delete a single exercise by ID
-  const deleteExercise = async (exerciseId) => {
-    if (!isAuthenticated) return false;
-
-    try {
-      const updatedExercises = exercises.filter(ex => ex.id !== exerciseId);
-      
-      await axios.post("/api/user-data/save-data", {
-        dataType: "exerciseLog",
-        data: updatedExercises
-      });
-
-      setExercises(updatedExercises);
-      return true;
-    } catch (error) {
-      console.error("Error deleting exercise:", error);
-      return false;
-    }
-  };
-
-  // Delete multiple exercises by IDs (for deleting entire exercise groups)
-  const deleteExercisesByIds = async (exerciseIds) => {
-    if (!isAuthenticated || !exerciseIds || exerciseIds.length === 0) return false;
-
-    try {
-      const updatedExercises = exercises.filter(ex => !exerciseIds.includes(ex.id));
-      
-      await axios.post("/api/user-data/save-data", {
-        dataType: "exerciseLog",
-        data: updatedExercises
-      });
-
-      setExercises(updatedExercises);
-      return true;
-    } catch (error) {
-      console.error("Error deleting exercises:", error);
-      return false;
-    }
-  };
-
-  const deleteAllExercises = async () => {
-    if (!isAuthenticated) return false;
-
-    try {
-      await axios.post("/api/user-data/save-data", {
-        dataType: "exerciseLog",
-        data: []
-      });
-
-      setExercises([]);
-      return true;
-    } catch (error) {
-      console.error("Error deleting all exercises:", error);
-      return false;
-    }
-  };
-
-  const getExercises = (count = null) => {
-    const sortedExercises = [...exercises].sort((a, b) => 
-      new Date(b.timestamp) - new Date(a.timestamp)
-    );
+        loadExercises();
+        
+        const refreshInterval = setInterval(() => {
+            setRefreshKey(prev => prev + 1);
+        }, 5000); 
+        
+        return () => clearInterval(refreshInterval);
+    }, [getExercises, expandedView, maxItems, refreshKey]);
     
-    return count ? sortedExercises.slice(0, count) : sortedExercises;
-  };
-
-  const value = {
-    exercises,
-    addExercise,
-    getExercises,
-    deleteExercise,
-    deleteExercisesByIds,
-    deleteAllExercises,
-    isLoading
-  };
-
-  return <ExerciseContext.Provider value={value}>{children}</ExerciseContext.Provider>;
+    const formatDate = (isoDate) => {
+        const date = new Date(isoDate);
+        return new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            hour12: true
+        }).format(date);
+    };
+    
+    const getExerciseColor = (exerciseType) => {
+        const colors = {
+            bicepCurl: "bg-blue-100 text-blue-600",
+            squat: "bg-green-100 text-green-600",
+            pushup: "bg-red-100 text-red-600",
+            shoulderPress: "bg-purple-100 text-purple-600",
+            tricepExtension: "bg-yellow-100 text-yellow-600",
+            lunge: "bg-orange-100 text-orange-600",
+            russianTwist: "bg-indigo-100 text-indigo-600",
+            default: "bg-slate-100 text-slate-600"
+        };
+        
+        return colors[exerciseType] || colors.default;
+    };
+    
+    const formatExerciseType = (exerciseType) => {
+        const names = {
+            bicepCurl: "Bicep Curl",
+            squat: "Squat",
+            pushup: "Push-up",
+            shoulderPress: "Shoulder Press",
+            tricepExtension: "Tricep Extension",
+            lunge: "Lunge",
+            russianTwist: "Russian Twist"
+        };
+        
+        return names[exerciseType] || exerciseType;
+    };
+    
+    const handleDeleteExercise = async (e, exercise) => {
+        e.stopPropagation();
+        
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to delete exercises");
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to delete this ${formatExerciseType(exercise.exerciseType)} session with ${exercise.count} reps?`)) {
+            try {
+                // First remove the exercise from UI immediately for better user feedback
+                setDisplayedExercises(prevExercises => 
+                    prevExercises.filter(ex => ex.id !== exercise.id)
+                );
+                
+                // Delete the exercise
+                const success = await deleteExercisesByIds([exercise.id]);
+                
+                if (success) {
+                    // Update the local exercises state after deletion
+                    setExercises(prevExercises => 
+                        prevExercises.filter(ex => ex.id !== exercise.id)
+                    );
+                    
+                    showNotification("success", `Deleted ${formatExerciseType(exercise.exerciseType)} session with ${exercise.count} reps`);
+                } else {
+                    showNotification("error", "Failed to delete exercise session");
+                    handleRefresh(); // Refresh to restore correct state
+                }
+            } catch (error) {
+                console.error("Error deleting exercise:", error);
+                showNotification("error", "Failed to delete exercise session");
+                handleRefresh(); // Refresh to restore correct state
+            }
+        }
+    };
+    
+    const handleDeleteAllExercises = async () => {
+        if (limited && !isAuthenticated) {
+            showNotification("warning", "Sign in to delete exercises");
+            return;
+        }
+        
+        if (confirm("Are you sure you want to delete ALL exercise records? This cannot be undone.")) {
+            try {
+                // Update UI immediately for better feedback
+                setDisplayedExercises([]);
+                
+                // Perform the deletion
+                const success = await deleteAllExercises();
+                
+                if (success) {
+                    setExercises([]);
+                    showNotification("success", "All exercise records deleted successfully");
+                } else {
+                    showNotification("error", "Failed to delete all exercise records");
+                    handleRefresh(); // Refresh to restore correct state
+                }
+            } catch (error) {
+                console.error("Error deleting all exercises:", error);
+                showNotification("error", "Failed to delete all exercise records");
+                handleRefresh();
+            }
+        }
+    };
+    
+    const showNotification = (type, message) => {
+        setNotification({ type, message });
+        
+        setTimeout(() => {
+            setNotification(null);
+        }, 5000);
+    };
+    
+    const handleRefresh = () => {
+        const allExercises = getExercises();
+        setExercises(allExercises);
+        
+        const sortedExercises = [...allExercises].sort((a, b) => 
+            new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        
+        const displayExercises = expandedView ? sortedExercises : sortedExercises.slice(0, maxItems);
+        setDisplayedExercises(displayExercises);
+    };
+    
+    if (isLoading) {
+        return (
+            <div className="flex h-40 items-center justify-center rounded-lg bg-white p-6 shadow-md">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#1e628c]"></div>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="rounded-xl bg-white p-6 shadow-md">
+           
+            {notification && (
+                <div 
+                    className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
+                        notification.type === "success" ? "bg-green-100 text-green-800" : 
+                        notification.type === "warning" ? "bg-amber-100 text-amber-800" :
+                        "bg-red-100 text-red-800"
+                    }`}
+                >
+                    {notification.type === "success" ? (
+                        <div className="flex items-center">
+                            <div className="mr-2 rounded-full bg-green-200 p-1">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            {notification.message}
+                        </div>
+                    ) : notification.type === "warning" ? (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
+                            {notification.message}
+                        </div>
+                    ) : (
+                        <div className="flex items-center">
+                            <AlertCircle className="mr-2 h-5 w-5" />
+                            {notification.message}
+                        </div>
+                    )}
+                </div>
+            )}
+            
+            <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold">RepBot Log</h2>
+                <div className="flex items-center gap-3">
+                    {exercises.length > 0 && (
+                        <button
+                            onClick={handleDeleteAllExercises}
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-red-600 hover:bg-red-50"
+                            title="Delete all exercise records"
+                        >
+                            <XCircle className="h-4 w-4" />
+                            <span className="hidden sm:inline">Delete All</span>
+                        </button>
+                    )}
+                    {exercises.length > maxItems && (
+                        <button
+                            onClick={() => setExpandedView(!expandedView)}
+                            className="flex items-center gap-1 text-sm font-medium text-[#1e628c] hover:underline"
+                        >
+                            {expandedView ? "Show Less" : "View All"}
+                        </button>
+                    )}
+                </div>
+            </div>
+            
+            {(!exercises || exercises.length === 0) ? (
+                <div className="flex h-40 flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                    <DumbbellIcon className="mb-2 h-9 w-9 text-slate-400" />
+                    <p className="text-slate-600">No RepBot records found.</p>
+                    <p className="text-sm text-slate-500">Complete exercises using the RepBot to see your activity here.</p>
+                    <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
+                        Go to RepBot
+                    </Link>
+                </div>
+            ) : (
+                <>
+                    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+                        {displayedExercises.map((exercise) => (
+                            <div key={exercise.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`flex h-9 w-9 items-center justify-center rounded-full ${getExerciseColor(exercise.exerciseType)}`}>
+                                                <DumbbellIcon className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium text-slate-900">
+                                                    {formatExerciseType(exercise.exerciseType)}
+                                                </h3>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={(e) => handleDeleteExercise(e, exercise)}
+                                            className="rounded-full p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                            title="Delete this exercise record"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="px-4 py-3">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-2xl font-bold text-[#1e628c]">
+                                                {exercise.count}
+                                            </span>
+                                            <span className="text-xs text-slate-500">
+                                                Reps
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>{formatDate(exercise.timestamp)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    {!expandedView && exercises.length > maxItems && (
+                        <button
+                            onClick={() => setExpandedView(true)}
+                            className="mt-4 w-full rounded-lg border border-slate-200 py-2 text-center text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                            Show All ({exercises.length}) Exercise Records
+                        </button>
+                    )}
+                    
+                    <div className="mt-4 text-center">
+                        <Link 
+                            to="/repbot"
+                            className="text-sm font-medium text-[#1e628c] hover:underline"
+                        >
+                            Go to RepBot
+                        </Link>
+                    </div>
+                </>
+            )}
+        </div>
+    );
 };
-
-ExerciseProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-export const useExercises = () => {
-  const context = useContext(ExerciseContext);
-  
-  if (context === undefined) {
-    throw new Error("useExercises must be used within an ExerciseProvider");
-  }
-  
-  return context;
-};
-
-export default ExerciseContext;
