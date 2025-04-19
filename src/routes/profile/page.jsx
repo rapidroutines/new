@@ -8,7 +8,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
 const ProfilePage = () => {
-    const { user, logout, isAuthenticated, updateProfile } = useAuth();
+    const { user, logout, isAuthenticated, updateProfile, deleteAccount } = useAuth();
     const { getChatHistory, syncChatHistoryWithCloud, deleteAllChatSessions } = useChatbot();
     const { getExercises, syncExercisesWithCloud, deleteAllExercises } = useExercises();
     
@@ -147,19 +147,22 @@ const ProfilePage = () => {
         }
     };
     
-    const deleteAccount = () => {
+    const handleDeleteAccount = async () => {
         if (confirm("Are you sure you want to delete your account and all associated data? This action cannot be undone.")) {
             try {
-                localStorage.removeItem("savedExercises_data");
-                localStorage.removeItem("exercises_data");
-                localStorage.removeItem("chatbot_history_data");
-                localStorage.removeItem("token");
+                const success = await deleteAccount();
                 
-                setSuccessMessage("Account deleted successfully. Redirecting...");
-                setTimeout(() => {
-                    logout();
-                    navigate("/");
-                }, 2000);
+                if (success) {
+                    setSuccessMessage("Account deleted successfully. Redirecting...");
+                    setTimeout(() => {
+                        navigate("/");
+                    }, 2000);
+                } else {
+                    setErrorMessage("Error deleting account. Please try again.");
+                    setTimeout(() => {
+                        setErrorMessage("");
+                    }, 3000);
+                }
             } catch (error) {
                 console.error("Error deleting account:", error);
                 setErrorMessage("Error deleting account. Please try again.");
@@ -454,7 +457,7 @@ const ProfilePage = () => {
                                     </p>
                                     <button 
                                         className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-                                        onClick={deleteAccount}
+                                        onClick={handleDeleteAccount}
                                     >
                                         Delete Account & All Data
                                     </button>
