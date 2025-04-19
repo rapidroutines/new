@@ -64,6 +64,7 @@ export const SavedExercises = ({ maxItems = 4 }) => {
             <div className="rounded-xl bg-white p-6">
                 <h2 className="mb-4 text-xl font-bold">Saved Exercises</h2>
                 <div className="flex flex-col items-center justify-center rounded-lg bg-slate-50 p-6 text-center">
+                    <BookmarkCheck className="mb-2 h-8 w-8 text-slate-400" />
                     <p className="text-slate-600">You haven't saved any exercises yet.</p>
                     <Link to="/library" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Explore exercise library
