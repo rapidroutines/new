@@ -206,7 +206,6 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
     return (
         <div className="rounded-xl bg-white p-6 shadow-md">
            
-            
             {notification && (
                 <div 
                     className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg p-3 pr-4 shadow-md transition-all ${
