@@ -247,7 +247,7 @@ const RapidTreePage = ({ limited = false }) => {
         setSelectedExercise(null);
         return;
       }
-  
+
       const updatedExercises = {...exercises};
       const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
 
@@ -262,7 +262,6 @@ const RapidTreePage = ({ limited = false }) => {
       setExercises(updatedExercises);
       setSelectedExercise(null);
       saveProgress();
-      showNotification("success", "Exercise completed and progress saved!");
     };
 
     const resetExercise = (category, exerciseId) => {
@@ -271,21 +270,21 @@ const RapidTreePage = ({ limited = false }) => {
         setSelectedExercise(null);
         return;
       }
-        
+    
         const updatedExercises = {...exercises};
         const index = updatedExercises[category].findIndex(ex => ex.id === exerciseId);
 
         if (index === -1) return;
-        
+    
         const nextExerciseIndex = index + 1;
         const hasNextExercise = nextExerciseIndex < updatedExercises[category].length;
-        
+    
         if (!hasNextExercise || (hasNextExercise && !updatedExercises[category][nextExerciseIndex].isLocked)) {
             updatedExercises[category][index].isCompleted = false;
-            
+        
             if (hasNextExercise && !updatedExercises[category][nextExerciseIndex].isCompleted) {
                 updatedExercises[category][nextExerciseIndex].isLocked = true;
-                
+            
                 for (let i = nextExerciseIndex + 1; i < updatedExercises[category].length; i++) {
                     if (!updatedExercises[category][i].isCompleted) {
                         updatedExercises[category][i].isLocked = true;
@@ -294,11 +293,10 @@ const RapidTreePage = ({ limited = false }) => {
                     }
                 }
             }
-            
+        
             setExercises(updatedExercises);
             setSelectedExercise(null);
             saveProgress();
-            showNotification("success", "Progress reset successfully!");
         } else {
             setSelectedExercise(null);
         }
@@ -321,17 +319,15 @@ const RapidTreePage = ({ limited = false }) => {
         showNotification("warning", "Sign in to reset all progress");
         return;
       }
-        
+    
         if (window.confirm("Are you sure you want to reset all progress? This cannot be undone.")) {
             const freshExercises = initializeExerciseCategories();
             setExercises(freshExercises);
             setTotalProgress(0);
-            
+        
             const success = await resetTreeProgress();
-            
-            if (success) {
-                showNotification("success", "All progress has been reset");
-            } else {
+        
+            if (!success) {
                 showNotification("error", "Failed to reset progress. Please try again.");
             }
         }
