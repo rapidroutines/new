@@ -1,3 +1,4 @@
+// src/contexts/exercise-context.jsx
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
