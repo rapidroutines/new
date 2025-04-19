@@ -137,7 +137,7 @@ const RepBotPage = () => {
             </div>
             
             <div className="text-center text-sm text-slate-600 mt-3 mb-2">
-                <p>Your exercises are automatically saved as you complete reps if you are signed in.</p>
+                <p>Your reps are automatically saved if you are signed in. Do not leave the RepBot page instantly or else reps will not save completely. </p>
             </div>
             
             <Footer />
