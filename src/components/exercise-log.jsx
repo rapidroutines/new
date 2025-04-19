@@ -269,7 +269,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     <Link to="/repbot" className="mt-3 text-sm font-medium text-[#1e628c] hover:underline">
                         Go to RepBot
                     </Link>
-                </div>
+                 </div>
             ) : (
                 <>
                     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2">
