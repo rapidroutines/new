@@ -57,7 +57,7 @@ const LoginPage = () => {
                 navigate(from, { replace: true });
             } else {
                 if (result.errorType === "user_not_found") {
-                    setEmailError("Account not found.");
+                    setEmailError("Account not found. Please check your email or sign up.");
                 } else if (result.errorType === "invalid_password") {
                     setPasswordError("Incorrect password. Please try again.");
                 } else {
@@ -66,6 +66,7 @@ const LoginPage = () => {
             }
         } catch (err) {
             console.error("Login error:", err);
+            setError("An unexpected error occurred. Please try again.");
         } finally {
             setIsSubmitting(false);
         }
