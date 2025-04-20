@@ -134,7 +134,6 @@ const RapidTreePage = ({ limited = false }) => {
     const { treeProgress, updateTreeProgress, resetTreeProgress, isLoading } = useRapidTree();
     const { isAuthenticated } = useAuth();
 
-    // Calculate total progress whenever exercises state changes
     useEffect(() => {
         let completedCount = 0;
         let totalCount = 0;
@@ -152,13 +151,11 @@ const RapidTreePage = ({ limited = false }) => {
         setTotalProgress(percentage);
     }, [exercises]);
 
-    // Load exercises from context provider when component mounts
     useEffect(() => {
         if (isLoading) return;
         
         const loadSavedProgress = () => {
             if (Object.keys(treeProgress).length === 0) {
-                // No saved progress, use default
                 setExercises(initializeExerciseCategories());
                 return;
             }
@@ -175,7 +172,6 @@ const RapidTreePage = ({ limited = false }) => {
                             }
                         });
                         
-                        // Update locked status based on completions
                         for (let i = 0; i < updatedExercises[category].length; i++) {
                             if (i === 0) {
                                 updatedExercises[category][i].isLocked = false;
@@ -207,7 +203,6 @@ const RapidTreePage = ({ limited = false }) => {
         loadSavedProgress();
     }, [treeProgress, isLoading]);
     
-    // Save exercises to context provider
     const saveProgress = async () => {
         const progressData = {};
         
