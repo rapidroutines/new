@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { useChatbot } from "@/contexts/chatbot-context";
 import { useExercises } from "@/contexts/exercise-context";
+import { useSavedExercises } from "@/contexts/saved-exercises-context";
 import { Footer } from "@/layouts/footer";
-import { User, Mail, Clock, LogOut, Save, CheckCircle, AlertCircle } from "lucide-react";
+import { User, Mail, Clock, LogOut, Save, CheckCircle, AlertCircle, BookmarkCheck } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
@@ -11,6 +12,7 @@ const ProfilePage = () => {
     const { user, logout, isAuthenticated, updateProfile, deleteAccount } = useAuth();
     const { getChatHistory, deleteAllChatSessions } = useChatbot();
     const { getExercises, deleteAllExercises } = useExercises();
+    const { savedExercises, removeAllSavedExercises } = useSavedExercises();
     
     const navigate = useNavigate();
     const location = useLocation();
@@ -23,6 +25,7 @@ const ProfilePage = () => {
     
     const chatHistoryCount = getChatHistory().length;
     const exercisesCount = getExercises().length;
+    const savedExercisesCount = savedExercises.length;
     
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
@@ -95,18 +98,39 @@ const ProfilePage = () => {
     };
     
     const clearExerciseHistory = () => {
-        if (confirm("Are you sure you want to clear your RepBot history? This cannot be undone.")) {
+        if (confirm("Are you sure you want to clear your exercise history? This cannot be undone.")) {
             try {
                 deleteAllExercises();
                 
-                setSuccessMessage("RepBot history cleared successfully!");
+                setSuccessMessage("Exercise history cleared successfully!");
                 
                 setTimeout(() => {
                     setSuccessMessage("");
                 }, 2000);
             } catch (error) {
-                console.error("Error clearing RepBot history:", error);
-                setErrorMessage("Error clearing RepBot history. Please try again.");
+                console.error("Error clearing exercise history:", error);
+                setErrorMessage("Error clearing exercise history. Please try again.");
+                
+                setTimeout(() => {
+                    setErrorMessage("");
+                }, 3000);
+            }
+        }
+    };
+    
+    const clearSavedExercises = () => {
+        if (confirm("Are you sure you want to remove all your saved exercises? This cannot be undone.")) {
+            try {
+                removeAllSavedExercises();
+                
+                setSuccessMessage("Saved exercises removed successfully!");
+                
+                setTimeout(() => {
+                    setSuccessMessage("");
+                }, 2000);
+            } catch (error) {
+                console.error("Error removing saved exercises:", error);
+                setErrorMessage("Error removing saved exercises. Please try again.");
                 
                 setTimeout(() => {
                     setErrorMessage("");
@@ -335,6 +359,31 @@ const ProfilePage = () => {
                             
                             <div className="space-y-6">
                                 <div className="rounded-lg border border-slate-200 p-5">
+                                    <h3 className="mb-1 font-medium text-slate-900">Saved Exercises</h3>
+                                    <p className="mb-4 text-sm text-slate-500">
+                                        Manage your saved exercise library ({savedExercisesCount} {savedExercisesCount === 1 ? 'exercise' : 'exercises'})
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link
+                                            to="/library"
+                                            className="rounded-lg bg-[#1e628c] px-3 py-2 text-sm font-medium text-white hover:bg-[#17516f]"
+                                        >
+                                            Go to Exercise Library
+                                        </Link>
+                                        <button 
+                                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                            onClick={clearSavedExercises}
+                                            disabled={savedExercisesCount === 0}
+                                        >
+                                            <span className="flex items-center gap-1">
+                                                <BookmarkCheck className="h-4 w-4" />
+                                                Remove All Saved Exercises
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            
+                                <div className="rounded-lg border border-slate-200 p-5">
                                     <h3 className="mb-1 font-medium text-slate-900">Chatbot History</h3>
                                     <p className="mb-4 text-sm text-slate-500">
                                         Manage your saved chat conversations ({chatHistoryCount} {chatHistoryCount === 1 ? 'conversation' : 'conversations'})
@@ -357,7 +406,7 @@ const ProfilePage = () => {
                                 </div>
                                 
                                 <div className="rounded-lg border border-slate-200 p-5">
-                                    <h3 className="mb-1 font-medium text-slate-900">RepBot History</h3>
+                                    <h3 className="mb-1 font-medium text-slate-900">Exercise History</h3>
                                     <p className="mb-4 text-sm text-slate-500">
                                         Manage your exercise tracking history ({exercisesCount} {exercisesCount === 1 ? 'record' : 'records'})
                                     </p>
@@ -366,14 +415,14 @@ const ProfilePage = () => {
                                             to="/"
                                             className="rounded-lg bg-[#1e628c] px-3 py-2 text-sm font-medium text-white hover:bg-[#17516f]"
                                         >
-                                            View RepBot History
+                                            View Exercise History
                                         </Link>
                                         <button 
                                             className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={exercisesCount === 0}
                                             onClick={clearExerciseHistory}
                                         >
-                                            Clear RepBot History
+                                            Clear Exercise History
                                         </button>
                                     </div>
                                 </div>
