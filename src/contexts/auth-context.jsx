@@ -64,9 +64,9 @@ export const AuthProvider = ({ children }) => {
         try {
             setError(null);
             setIsLoading(true);
-        
+    
             const res = await axios.post("/api/auth/login", { email, password });
-        
+    
             if (res.data?.token) {
                 localStorage.setItem("token", res.data.token);
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
@@ -74,30 +74,30 @@ export const AuthProvider = ({ children }) => {
                 setIsAuthenticated(true);
                 return { success: true };
             }
-        
+    
             return { success: false, message: "Login failed" };
         } catch (err) {
             let errorType = "unknown";
             let errorMessage = err.response?.data?.message || "Login failed";
-        
+    
             if (err.response?.status === 400) {
-                if (errorMessage.includes("Invalid credentials")) {
-                    if (err.response?.data?.details?.field === "email") {
-                        errorType = "user_not_found";
-                    } else if (err.response?.data?.details?.field === "password") {
-                        errorType = "invalid_password";
-                    }
+                if (err.response?.data?.details?.field === "email") {
+                    errorType = "user_not_found";
+                errorMessage = "Account not found.";
+                } else if (err.response?.data?.details?.field === "password") {
+                    errorType = "invalid_password";
+                    errorMessage = "Incorrect password. Please try again.";
                 }
             }
-        
+    
             console.log("Login error:", { 
                 errorType, 
                 errorMessage, 
                 details: err.response?.data?.details 
             });
-        
+    
             setError(errorMessage);
-        
+    
             return { 
                 success: false, 
                 message: errorMessage,
