@@ -93,8 +93,8 @@ const RepBotPage = () => {
     }, [addExercise]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-80px)]">
-            <div className="relative flex-1 w-full overflow-hidden bg-white dark:bg-slate-950 rounded-lg shadow-sm" style={{ minHeight: "600px" }}>
+        <div className="flex flex-col gap-y-6">
+            <div className="relative w-full h-[700px] rounded-xl overflow-hidden bg-white dark:bg-slate-950 shadow-md">
                 {isLoading && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-950/80 z-10">
                         <div className="flex flex-col items-center text-center">
@@ -108,7 +108,7 @@ const RepBotPage = () => {
                 <iframe 
                     ref={iframeRef}
                     src="https://render-repbot.vercel.app/" 
-                    className="w-full h-full border-0"
+                    className="h-full w-full border-0"
                     title="RepBot AI Exercise Counter"
                     onLoad={() => {
                         setIsLoading(false);
@@ -116,11 +116,11 @@ const RepBotPage = () => {
                     }}
                     allow="camera; microphone; accelerometer; gyroscope; fullscreen"
                     allowFullScreen
-                    style={{ borderRadius: '0.5rem' }}
+                    style={{ borderRadius: '0.75rem' }}
                 />
             </div>
             
-            <div className="text-center text-sm text-slate-600 mt-3 mb-2">
+            <div className="text-center text-sm text-slate-600">
                 <p>Your reps are automatically saved if you are signed in. Do not leave the RepBot page instantly or else reps will not save completely. </p>
             </div>
             
