@@ -55,7 +55,6 @@ const LoginPage = () => {
                 
                 navigate(from, { replace: true });
             } else {
-                // Handle specific error types
                 if (result.errorType === "user_not_found") {
                     setEmailError("Account not found. Please check your email or sign up.");
                 } else if (result.errorType === "invalid_password") {
