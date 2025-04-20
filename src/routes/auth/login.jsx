@@ -26,43 +26,37 @@ const LoginPage = () => {
     
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+    
         setError(null);
         setEmailError("");
         setPasswordError("");
-        
+    
         if (!email.trim()) {
             setEmailError("Email is required");
             return;
         }
-        
+    
         if (!password) {
             setPasswordError("Password is required");
             return;
         }
-        
+    
         if (isSubmitting) return;
-        
+    
         try {
             setIsSubmitting(true);
             const result = await login(email.trim(), password);
-            
+        
             if (result.success) {
                 if (rememberMe) {
-                    localStorage.setItem("rememberedEmail", email.trim());
+                localStorage.setItem("rememberedEmail", email.trim());
                 } else {
                     localStorage.removeItem("rememberedEmail");
                 }
-                
+            
                 navigate(from, { replace: true });
             } else {
-                if (result.errorType === "user_not_found") {
-                    setEmailError("Account not found. Please check your email or sign up.");
-                } else if (result.errorType === "invalid_password") {
-                    setPasswordError("Incorrect password. Please try again.");
-                } else {
-                    setError(result.message || "Login failed");
-                }
+        
             }
         } catch (err) {
             console.error("Login error:", err);
