@@ -137,8 +137,6 @@ const PASSWORD_RESET_REQUEST_TEMPLATE = `
     
     <p style="margin: 16px 0; color: #4b5563;">If you didn't request this change, you can ignore this email and your password will remain the same.</p>
     
-    <p style="margin: 16px 0; color: #6b7280; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
-    <p style="margin: 16px 0; color: #6b7280; font-size: 13px; word-break: break-all;">{resetURL}</p>
     
     <p style="margin: 24px 0 16px 0; color: #4b5563;">Thank you,<br>The RapidRoutines Team</p>
   </div>
