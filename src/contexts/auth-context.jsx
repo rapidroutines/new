@@ -72,13 +72,32 @@ export const AuthProvider = ({ children }) => {
                 axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
                 setUser(res.data.user);
                 setIsAuthenticated(true);
-                return true;
+                return { success: true };
             }
             
-            return false;
+            return { success: false, message: "Login failed" };
         } catch (err) {
-            setError(err.response?.data?.message || "Login failed");
-            return false;
+            let errorType = "unknown";
+            let errorMessage = err.response?.data?.message || "Login failed";
+            
+            // Interpret error types based on server response or status code
+            if (err.response?.status === 400) {
+                if (errorMessage.includes("Invalid credentials")) {
+                    // Determine if user not found or wrong password
+                    if (err.response?.data?.details?.field === "email") {
+                        errorType = "user_not_found";
+                    } else {
+                        errorType = "invalid_password";
+                    }
+                }
+            }
+            
+            setError(errorMessage);
+            return { 
+                success: false, 
+                message: errorMessage,
+                errorType: errorType
+            };
         } finally {
             setIsLoading(false);
         }
