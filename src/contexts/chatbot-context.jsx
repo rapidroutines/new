@@ -125,6 +125,7 @@ export const ChatbotProvider = ({ children }) => {
   const getChatHistory = (count = null) => {
     return count ? chatHistory.slice(0, count) : chatHistory;
   };
+  
 
   const value = {
     chatHistory,
