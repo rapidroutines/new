@@ -1,4 +1,3 @@
-// src/contexts/exercise-context.jsx
 import { createContext, useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "./auth-context";
@@ -35,7 +34,6 @@ export const ExerciseProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const addExercise = async (exerciseData) => {
-    // Create a unique ID for this exercise
     const newExercise = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -44,16 +42,13 @@ export const ExerciseProvider = ({ children }) => {
     
     if (isAuthenticated) {
       try {
-        // Add the new exercise to the existing list
         const updatedExercises = [...exercises, newExercise];
         
-        // Save to server
         await axios.post("/api/user-data/save-data", {
           dataType: "exerciseLog",
           data: updatedExercises
         });
 
-        // Update local state
         setExercises(updatedExercises);
         return true;
       } catch (error) {
@@ -61,13 +56,11 @@ export const ExerciseProvider = ({ children }) => {
         return false;
       }
     } else {
-      // If not authenticated, we won't save the data
       console.log("Exercise not saved: User not authenticated");
       return false;
     }
   };
 
-  // Delete a single exercise by ID
   const deleteExercise = async (exerciseId) => {
     if (!isAuthenticated) return false;
 
@@ -87,7 +80,6 @@ export const ExerciseProvider = ({ children }) => {
     }
   };
 
-  // Delete multiple exercises by IDs (for deleting entire exercise groups)
   const deleteExercisesByIds = async (exerciseIds) => {
     if (!isAuthenticated || !exerciseIds || exerciseIds.length === 0) return false;
 
