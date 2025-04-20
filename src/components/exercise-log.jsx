@@ -48,14 +48,14 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     id: groupKey,
                     exerciseType: typeKey,
                     count: 1,
-                    totalReps: Number(exercise.count) || 0,  // Ensure it's a number
+                    totalReps: Number(exercise.count) || 0,  
                     timestamp: exercise.timestamp,
                     exercises: [exercise]
                 });
             } else {
                 const group = groups.get(groupKey);
                 group.count += 1;
-                group.totalReps += Number(exercise.count) || 0;  // Ensure it's a number
+                group.totalReps += Number(exercise.count) || 0; 
                 group.exercises.push(exercise);
                 
                 if (new Date(exercise.timestamp) > new Date(group.timestamp)) {
@@ -119,19 +119,15 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         
         if (confirm(`Are you sure you want to delete the entire ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps from ${new Date(exerciseGroup.timestamp).toLocaleDateString()}?`)) {
             try {
-                // First remove the card from UI immediately for better user feedback
                 setGroupedExercises(prevGroups => 
                     prevGroups.filter(group => group.id !== exerciseGroup.id)
                 );
                 
-                // Get all exercise IDs in this group
                 const exerciseIdsToDelete = exerciseGroup.exercises.map(ex => ex.id);
                 
-                // Delete all exercises in this group using the new batch delete function
                 const success = await deleteExercisesByIds(exerciseIdsToDelete);
                 
                 if (success) {
-                    // Update the local exercises state after deletion
                     setExercises(prevExercises => 
                         prevExercises.filter(ex => !exerciseIdsToDelete.includes(ex.id))
                     );
@@ -139,12 +135,12 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     showNotification("success", `Deleted ${formatExerciseType(exerciseGroup.exerciseType)} session with ${exerciseGroup.totalReps} reps`);
                 } else {
                     showNotification("error", "Failed to delete exercise session");
-                    handleRefresh(); // Refresh to restore correct state
+                    handleRefresh();
                 }
             } catch (error) {
                 console.error("Error deleting exercise group:", error);
                 showNotification("error", "Failed to delete exercise session");
-                handleRefresh(); // Refresh to restore correct state
+                handleRefresh(); 
             }
         }
     };
@@ -157,10 +153,8 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
         
         if (confirm("Are you sure you want to delete ALL exercise records? This cannot be undone.")) {
             try {
-                // Update UI immediately for better feedback
                 setGroupedExercises([]);
                 
-                // Perform the deletion
                 const success = await deleteAllExercises();
                 
                 if (success) {
@@ -168,7 +162,7 @@ export const ExerciseLog = ({ maxItems = 5, limited = false }) => {
                     showNotification("success", "All exercise records deleted successfully");
                 } else {
                     showNotification("error", "Failed to delete all exercise records");
-                    handleRefresh(); // Refresh to restore correct state
+                    handleRefresh();
                 }
             } catch (error) {
                 console.error("Error deleting all exercises:", error);
