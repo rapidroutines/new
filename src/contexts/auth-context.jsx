@@ -167,7 +167,6 @@ export const AuthProvider = ({ children }) => {
             const res = await axios.delete("/api/auth/delete-account");
             
             if (res.status === 200) {
-                // After successful deletion, perform full cleanup
                 localStorage.removeItem("savedExercises_data");
                 localStorage.removeItem("exercises_data");
                 localStorage.removeItem("chatbot_history_data");
