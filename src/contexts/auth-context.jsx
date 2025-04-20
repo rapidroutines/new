@@ -68,11 +68,11 @@ export const AuthProvider = ({ children }) => {
             const res = await axios.post("/api/auth/login", { email, password });
         
             if (res.data?.token) {
-            localStorage.setItem("token", res.data.token);
-            axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
-            setUser(res.data.user);
-            setIsAuthenticated(true);
-            return { success: true };
+                localStorage.setItem("token", res.data.token);
+                axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+                setUser(res.data.user);
+                setIsAuthenticated(true);
+                return { success: true };
             }
         
             return { success: false, message: "Login failed" };
@@ -89,6 +89,12 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
             }
+        
+            console.log("Login error:", { 
+                errorType, 
+                errorMessage, 
+                details: err.response?.data?.details 
+            });
         
             setError(errorMessage);
         
