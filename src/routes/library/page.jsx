@@ -287,7 +287,6 @@ const exercises = [
             "Modify with pillows if needed"
         ]
     },
-    // NEW CORE EXERCISES
     {
         id: 17,
         title: "Russian Twist",
