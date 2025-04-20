@@ -1,3 +1,4 @@
+// src/routes/auth/login.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
@@ -25,7 +26,9 @@ const LoginPage = () => {
     const from = location.state?.from || "/";
     
     const handleSubmit = async (e) => {
+        // Prevent default form submission to avoid page reload
         e.preventDefault();
+        
         setError(null);
         setEmailError("");
         setPasswordError("");
@@ -55,7 +58,7 @@ const LoginPage = () => {
                 
                 navigate(from, { replace: true });
             } else {
-                // Handle specific error types
+                // Handle specific error types without page reload
                 if (result.errorType === "user_not_found") {
                     setEmailError("Account not found. Please check your email or sign up.");
                 } else if (result.errorType === "invalid_password") {
