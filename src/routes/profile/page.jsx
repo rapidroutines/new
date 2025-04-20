@@ -350,7 +350,7 @@ const ProfilePage = () => {
                                     </div>
                                     
                                     <div className="mt-6 pt-6 border-t border-slate-200">
-                                        <h3 className="mb-4 font-medium text-slate-900">Account Data</h3>
+                                        <h3 className="mb-4 font-medium text-slate-900">Account</h3>
                                         <button 
                                             className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
                                             onClick={handleDeleteAccount}
