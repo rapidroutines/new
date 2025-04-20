@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
-import { AlertCircle, CheckCircle, ArrowLeft, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle, ArrowLeft, Mail, Info } from "lucide-react";
 import logoLight from "@/assets/main_logo.png";
 
 const ForgotPasswordPage = () => {
@@ -42,6 +42,14 @@ const ForgotPasswordPage = () => {
                             ? "Check your email for reset instructions"
                             : "Enter your email to receive a password reset link"}
                     </p>
+                    {!isSubmitted && (
+                        <div className="mt-2 text-center">
+                            <div className="text-xs text-amber-600 flex items-center justify-center gap-2 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 mt-2">
+                                <Info className="h-4 w-4" />
+                                <span>Please allow 3-5 minutes for the password reset email to arrive</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 
                 {error && (
