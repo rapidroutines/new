@@ -13,7 +13,6 @@ export const RapidTreeProvider = ({ children }) => {
   useEffect(() => {
     const fetchTreeProgress = async () => {
       if (!isAuthenticated) {
-        // If not authenticated, initialize with empty progress
         setTreeProgress({});
         setIsLoading(false);
         return;
@@ -24,11 +23,9 @@ export const RapidTreeProvider = ({ children }) => {
         const response = await axios.get("/api/user-data/get-data");
         const userData = response.data;
         
-        // Check if rapidTreeProgress exists in user data
         if (userData.rapidTreeProgress) {
           setTreeProgress(userData.rapidTreeProgress);
         } else {
-          // If not, initialize with empty progress
           setTreeProgress({});
         }
       } catch (error) {
@@ -58,12 +55,10 @@ export const RapidTreeProvider = ({ children }) => {
   };
 
   const updateTreeProgress = async (newProgress) => {
-    // Only update state and save to server if authenticated
     if (isAuthenticated) {
       setTreeProgress(newProgress);
       return await saveProgressToServer(newProgress);
     } else {
-      // For non-authenticated users, just update the state without persistence
       setTreeProgress(newProgress);
     }
     
@@ -74,7 +69,6 @@ export const RapidTreeProvider = ({ children }) => {
     const emptyProgress = {};
     setTreeProgress(emptyProgress);
     
-    // If authenticated, save empty progress to server
     if (isAuthenticated) {
       return await saveProgressToServer(emptyProgress);
     }
