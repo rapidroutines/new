@@ -80,10 +80,8 @@ export const AuthProvider = ({ children }) => {
             let errorType = "unknown";
             let errorMessage = err.response?.data?.message || "Login failed";
             
-            // Interpret error types based on server response or status code
             if (err.response?.status === 400) {
                 if (errorMessage.includes("Invalid credentials")) {
-                    // Determine if user not found or wrong password
                     if (err.response?.data?.details?.field === "email") {
                         errorType = "user_not_found";
                     } else {
