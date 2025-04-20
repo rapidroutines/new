@@ -8,12 +8,10 @@ const RepBotPage = () => {
     const { addExercise } = useExercises();
     const iframeRef = useRef(null);
     
-    // Keep track of processed exercises by timestamp to avoid duplicates
     const processedExercises = useRef(new Map());
     
     useEffect(() => {
         const handleMessage = (event) => {
-            // Validate message origin
             if (
                 event.origin !== "https://render-repbot.vercel.app" && 
                 event.origin !== "https://render-repbot.onrender.com"
@@ -25,24 +23,19 @@ const RepBotPage = () => {
                 const { exerciseType, repCount, timestamp } = event.data;
                 const exerciseTimestamp = timestamp || new Date().toISOString();
                 
-                // Create an exercise key based on type, count, and timestamp
                 const exerciseKey = `${exerciseType}-${repCount}-${exerciseTimestamp}`;
                 
-                // Only process if we haven't seen this exact exercise before
                 if (!processedExercises.current.has(exerciseKey)) {
-                    // Log the exercise exactly as received from the RepBot
                     addExercise({
                         exerciseType: exerciseType,
                         count: repCount,
                         timestamp: exerciseTimestamp
                     });
                     
-                    // Mark this exercise as processed
                     processedExercises.current.set(exerciseKey, true);
                     
                     console.log(`Exercise logged: ${exerciseType}, ${repCount} reps at ${exerciseTimestamp}`);
                     
-                    // Clear old entries to prevent memory buildup (keep last 50)
                     if (processedExercises.current.size > 50) {
                         const entries = Array.from(processedExercises.current.entries());
                         entries.slice(0, entries.length - 50).forEach(([key]) => {
@@ -53,16 +46,13 @@ const RepBotPage = () => {
             }
         };
         
-        // Add event listener
         window.addEventListener("message", handleMessage);
         
-        // Clean up function
         return () => {
             window.removeEventListener("message", handleMessage);
         };
     }, [addExercise]);
     
-    // Handle exercises saved to localStorage by the iframe
     useEffect(() => {
         const checkLocalStorageForExercises = () => {
             try {
@@ -74,16 +64,13 @@ const RepBotPage = () => {
                     const exerciseTimestamp = exerciseData.timestamp || new Date().toISOString();
                     const exerciseKey = `${exerciseData.type}-${exerciseData.count}-${exerciseTimestamp}`;
                     
-                    // Only process if we haven't seen this exact exercise before
                     if (!processedExercises.current.has(exerciseKey) && !exerciseData.processed) {
-                        // Log the exercise directly with the exact rep count
                         addExercise({
                             exerciseType: exerciseData.type,
                             count: exerciseData.count,
                             timestamp: exerciseTimestamp
                         });
                         
-                        // Mark as processed
                         localStorage.setItem(repbotExerciseKey, JSON.stringify({
                             ...exerciseData,
                             processed: true
@@ -98,10 +85,8 @@ const RepBotPage = () => {
             }
         };
         
-        // Check once initially
         checkLocalStorageForExercises();
         
-        // Check periodically for exercises that might have been saved offline
         const interval = setInterval(checkLocalStorageForExercises, 2000);
         
         return () => clearInterval(interval);
@@ -127,7 +112,6 @@ const RepBotPage = () => {
                     title="RepBot AI Exercise Counter"
                     onLoad={() => {
                         setIsLoading(false);
-                        // Clear any old processed exercises when iframe reloads
                         processedExercises.current.clear();
                     }}
                     allow="camera; microphone; accelerometer; gyroscope; fullscreen"
