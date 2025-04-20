@@ -95,18 +95,18 @@ const ProfilePage = () => {
     };
     
     const clearExerciseHistory = () => {
-        if (confirm("Are you sure you want to clear your exercise history? This cannot be undone.")) {
+        if (confirm("Are you sure you want to clear your RepBot history? This cannot be undone.")) {
             try {
                 deleteAllExercises();
                 
-                setSuccessMessage("Exercise history cleared successfully!");
+                setSuccessMessage("RepBot history cleared successfully!");
                 
                 setTimeout(() => {
                     setSuccessMessage("");
                 }, 2000);
             } catch (error) {
-                console.error("Error clearing exercise history:", error);
-                setErrorMessage("Error clearing exercise history. Please try again.");
+                console.error("Error clearing RepBot history:", error);
+                setErrorMessage("Error clearing RepBot history. Please try again.");
                 
                 setTimeout(() => {
                     setErrorMessage("");
@@ -357,7 +357,7 @@ const ProfilePage = () => {
                                 </div>
                                 
                                 <div className="rounded-lg border border-slate-200 p-5">
-                                    <h3 className="mb-1 font-medium text-slate-900">Exercise History</h3>
+                                    <h3 className="mb-1 font-medium text-slate-900">RepBot History</h3>
                                     <p className="mb-4 text-sm text-slate-500">
                                         Manage your exercise tracking history ({exercisesCount} {exercisesCount === 1 ? 'record' : 'records'})
                                     </p>
@@ -366,14 +366,14 @@ const ProfilePage = () => {
                                             to="/"
                                             className="rounded-lg bg-[#1e628c] px-3 py-2 text-sm font-medium text-white hover:bg-[#17516f]"
                                         >
-                                            View Exercise History
+                                            View RepBot History
                                         </Link>
                                         <button 
                                             className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                                             disabled={exercisesCount === 0}
                                             onClick={clearExerciseHistory}
                                         >
-                                            Clear Exercise History
+                                            Clear RepBot History
                                         </button>
                                     </div>
                                 </div>
