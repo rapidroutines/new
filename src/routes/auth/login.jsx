@@ -10,12 +10,16 @@ const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
     const { login, isLoading, error, setError } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     
     useEffect(() => {
         setError(null);
+        setEmailError("");
+        setPasswordError("");
     }, [email, password, setError]);
     
     const from = location.state?.from || "/";
@@ -23,14 +27,16 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        setEmailError("");
+        setPasswordError("");
         
         if (!email.trim()) {
-            setError("Email is required");
+            setEmailError("Email is required");
             return;
         }
         
         if (!password) {
-            setError("Password is required");
+            setPasswordError("Password is required");
             return;
         }
         
@@ -38,9 +44,9 @@ const LoginPage = () => {
         
         try {
             setIsSubmitting(true);
-            const success = await login(email.trim(), password);
+            const result = await login(email.trim(), password);
             
-            if (success) {
+            if (result.success) {
                 if (rememberMe) {
                     localStorage.setItem("rememberedEmail", email.trim());
                 } else {
@@ -48,6 +54,15 @@ const LoginPage = () => {
                 }
                 
                 navigate(from, { replace: true });
+            } else {
+                // Handle specific error types
+                if (result.errorType === "user_not_found") {
+                    setEmailError("Account not found. Please check your email or sign up.");
+                } else if (result.errorType === "invalid_password") {
+                    setPasswordError("Incorrect password. Please try again.");
+                } else {
+                    setError(result.message || "Login failed");
+                }
             }
         } catch (err) {
             console.error("Login error:", err);
@@ -90,10 +105,15 @@ const LoginPage = () => {
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full rounded-lg border border-slate-300 p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]"
+                            className={`w-full rounded-lg border ${
+                                emailError ? 'border-red-300' : 'border-slate-300'
+                            } p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]`}
                             placeholder="your@email.com"
                             disabled={isSubmitting}
                         />
+                        {emailError && (
+                            <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                        )}
                     </div>
                     
                     <div>
@@ -106,7 +126,9 @@ const LoginPage = () => {
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full rounded-lg border border-slate-300 p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]"
+                                className={`w-full rounded-lg border ${
+                                    passwordError ? 'border-red-300' : 'border-slate-300'
+                                } p-2.5 focus:border-[#1e628c] focus:outline-none focus:ring-1 focus:ring-[#1e628c]`}
                                 placeholder="••••••••"
                                 disabled={isSubmitting}
                             />
@@ -123,6 +145,9 @@ const LoginPage = () => {
                                 )}
                             </button>
                         </div>
+                        {passwordError && (
+                            <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+                        )}
                     </div>
                     
                     <div className="flex items-center justify-between">
