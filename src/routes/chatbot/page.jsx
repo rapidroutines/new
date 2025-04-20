@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Footer } from "@/layouts/footer";
 import { MessageSquare } from "lucide-react";
 import { useChatbot } from "@/contexts/chatbot-context";
+import { useAuth } from "@/contexts/auth-context";
 import { sendMessageToIframe, createIframeMessageHandler, loadChatHistory } from "@/utils/iframe-message-utils";
 
 const ChatbotPage = () => {
@@ -12,13 +13,14 @@ const ChatbotPage = () => {
     const [iframeLoaded, setIframeLoaded] = useState(false);
     const iframeRef = useRef(null);
     const { addChatSession, getChatHistory } = useChatbot();
+    const { isAuthenticated } = useAuth();
     
     const conversationId = searchParams.get('conversationId');
     
     const currentConversation = useRef([]);
     
     const handleChatEnd = () => {
-        if (chatEnded) return; 
+        if (chatEnded || !isAuthenticated) return; 
         
         if (currentConversation.current.length > 0) {
             console.log("Saving chat conversation:", currentConversation.current);
@@ -33,7 +35,7 @@ const ChatbotPage = () => {
     
     useEffect(() => {
         const loadPreviousConversation = async () => {
-            if (!conversationId || !iframeLoaded || !iframeRef.current) return;
+            if (!conversationId || !iframeLoaded || !iframeRef.current || !isAuthenticated) return;
             
             const chatHistory = getChatHistory();
             const conversation = chatHistory.find(chat => chat.id.toString() === conversationId);
@@ -56,13 +58,13 @@ const ChatbotPage = () => {
         };
         
         loadPreviousConversation();
-    }, [conversationId, getChatHistory, iframeLoaded]);
+    }, [conversationId, getChatHistory, iframeLoaded, isAuthenticated]);
     
     useEffect(() => {
         return () => {
             handleChatEnd();
         };
-    }, []);
+    }, [isAuthenticated]);
     
     useEffect(() => {
         const allowedOrigins = [
@@ -75,13 +77,15 @@ const ChatbotPage = () => {
             chatMessage: (data) => {
                 const { role, content } = data;
                 
-                currentConversation.current.push({
-                    role,
-                    content,
-                    timestamp: new Date().toISOString()
-                });
-                
-                console.log("Received chat message:", { role, content });
+                if (content) {
+                    currentConversation.current.push({
+                        role,
+                        content,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    console.log("Received chat message:", { role, content });
+                }
             },
             chatEnded: () => {
                 handleChatEnd();
@@ -95,7 +99,7 @@ const ChatbotPage = () => {
         return () => {
             window.removeEventListener("message", handleMessage);
         };
-    }, [addChatSession]);
+    }, [addChatSession, isAuthenticated]);
 
     return (
         <div className="flex flex-col gap-y-6">
@@ -127,7 +131,11 @@ const ChatbotPage = () => {
             </div>
             
             <div className="text-center text-sm text-slate-600">
-                <p>Your chats are automatically saved if you are signed in.</p>
+                {isAuthenticated ? (
+                    <p>Your chats are automatically saved to your account.</p>
+                ) : (
+                    <p>Sign in to save your chat history.</p>
+                )}
             </div>
 
             <Footer />
