@@ -64,23 +64,22 @@ export const AuthProvider = ({ children }) => {
         try {
             setError(null);
             setIsLoading(true);
-            
+        
             const res = await axios.post("/api/auth/login", { email, password });
-            
+        
             if (res.data?.token) {
-                localStorage.setItem("token", res.data.token);
-                axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
-                setUser(res.data.user);
-                setIsAuthenticated(true);
-                return { success: true };
+            localStorage.setItem("token", res.data.token);
+            axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.token}`;
+            setUser(res.data.user);
+            setIsAuthenticated(true);
+            return { success: true };
             }
-            
+        
             return { success: false, message: "Login failed" };
         } catch (err) {
             let errorType = "unknown";
             let errorMessage = err.response?.data?.message || "Login failed";
-            
-            // Interpret error types based on server response
+        
             if (err.response?.status === 400) {
                 if (errorMessage.includes("Invalid credentials")) {
                     if (err.response?.data?.details?.field === "email") {
@@ -90,8 +89,9 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
             }
-            
+        
             setError(errorMessage);
+        
             return { 
                 success: false, 
                 message: errorMessage,
