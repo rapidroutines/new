@@ -31,11 +31,9 @@ const ExerciseTrackerPage = ({ limited = false }) => {
     
     const saveExerciseToServer = async (exercise) => {
         try {
-            // Add the new exercise to the existing list
             const updatedExercises = [...trackerExercises, exercise];
             setTrackerExercises(updatedExercises);
             
-            // Save to server
             await axios.post("/api/user-data/save-data", {
                 dataType: "trackerExercises",
                 data: updatedExercises
@@ -73,9 +71,7 @@ const ExerciseTrackerPage = ({ limited = false }) => {
     };
     
     useEffect(() => {
-        // Handle messages from the iframe
         const messageHandler = (event) => {
-            // Make sure the message is from our iframe
             if (
                 event.origin !== "https://exercise-tracker-tau.vercel.app" && 
                 event.origin !== window.location.origin
@@ -86,7 +82,6 @@ const ExerciseTrackerPage = ({ limited = false }) => {
             if (event.data && event.data.type) {
                 switch (event.data.type) {
                     case "checkAuth":
-                        // Send authentication status to iframe
                         const iframe = document.querySelector('iframe');
                         if (iframe && iframe.contentWindow) {
                             iframe.contentWindow.postMessage({
@@ -98,7 +93,6 @@ const ExerciseTrackerPage = ({ limited = false }) => {
                         break;
                     
                     case "getTrackerExercises":
-                        // Send exercises data to iframe
                         const iframeForData = document.querySelector('iframe');
                         if (iframeForData && iframeForData.contentWindow) {
                             iframeForData.contentWindow.postMessage({
@@ -109,21 +103,18 @@ const ExerciseTrackerPage = ({ limited = false }) => {
                         break;
                     
                     case "saveTrackerExercise":
-                        // Save exercise to server
                         if (isAuthenticated && event.data.exercise) {
                             saveExerciseToServer(event.data.exercise);
                         }
                         break;
                     
                     case "removeTrackerExercise":
-                        // Remove exercise from server
                         if (isAuthenticated && event.data.exerciseId) {
                             removeExerciseFromServer(event.data.exerciseId);
                         }
                         break;
                         
                     case "exerciseNotAuthenticated":
-                        // Show notification when user is not authenticated
                         showNotification("warning", "Sign in to save exercises");
                         break;
                 }
