@@ -3,14 +3,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { useChatbot } from "@/contexts/chatbot-context";
 import { useExercises } from "@/contexts/exercise-context";
 import { Footer } from "@/layouts/footer";
-import { User, Mail, Clock, LogOut, Save, CheckCircle, RefreshCw, AlertCircle, Database } from "lucide-react";
+import { User, Mail, Clock, LogOut, Save, CheckCircle, AlertCircle } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
 
 const ProfilePage = () => {
     const { user, logout, isAuthenticated, updateProfile, deleteAccount } = useAuth();
-    const { getChatHistory, syncChatHistoryWithCloud, deleteAllChatSessions } = useChatbot();
-    const { getExercises, syncExercisesWithCloud, deleteAllExercises } = useExercises();
+    const { getChatHistory, deleteAllChatSessions } = useChatbot();
+    const { getExercises, deleteAllExercises } = useExercises();
     
     const navigate = useNavigate();
     const location = useLocation();
@@ -20,7 +20,6 @@ const ProfilePage = () => {
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [isEditing, setIsEditing] = useState(false);
-    const [isSyncing, setIsSyncing] = useState(false);
     
     const chatHistoryCount = getChatHistory().length;
     const exercisesCount = getExercises().length;
@@ -71,37 +70,6 @@ const ProfilePage = () => {
             setTimeout(() => {
                 setSuccessMessage("");
             }, 3000);
-        }
-    };
-    
-    const syncAllData = async () => {
-        if (!isAuthenticated) {
-            setErrorMessage("You must be logged in to sync data");
-            return;
-        }
-        
-        setIsSyncing(true);
-        
-        try {
-            await Promise.all([
-                syncChatHistoryWithCloud(),
-                syncExercisesWithCloud()
-            ]);
-            
-            setSuccessMessage("All data synchronized successfully!");
-            
-            setTimeout(() => {
-                setSuccessMessage("");
-            }, 3000);
-        } catch (error) {
-            console.error("Error syncing data:", error);
-            setErrorMessage("Error synchronizing data. Please try again.");
-            
-            setTimeout(() => {
-                setErrorMessage("");
-            }, 3000);
-        } finally {
-            setIsSyncing(false);
         }
     };
     
@@ -248,32 +216,6 @@ const ProfilePage = () => {
                         </button>
                     </nav>
                     
-                    {isAuthenticated && (
-                        <div className="mt-4">
-                            <button
-                                onClick={syncAllData}
-                                disabled={isSyncing}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-100 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-70"
-                            >
-                                {isSyncing ? (
-                                    <>
-                                        <RefreshCw className="h-4 w-4 animate-spin" />
-                                        Syncing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Database className="h-4 w-4" />
-                                        Sync All Data
-                                    </>
-                                )}
-                            </button>
-                            
-                            <div className="mt-2 text-center text-xs text-slate-500">
-                                {isAuthenticated ? "Your data syncs automatically" : "Sign in to sync your data"}
-                            </div>
-                        </div>
-                    )}
-                    
                     <div className="mt-6 border-t border-slate-200 pt-4">
                         <button
                             onClick={handleLogout}
@@ -384,20 +326,6 @@ const ProfilePage = () => {
                                     </div>
                                 </div>
                             )}
-                            
-                            <div className="mt-8">
-                                <h3 className="mb-4 text-lg font-medium text-slate-800">Your Data Summary</h3>
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    <div className="rounded-lg border border-slate-200 p-4 text-center">
-                                        <div className="text-2xl font-bold text-[#1e628c]">{exercisesCount}</div>
-                                        <div className="text-sm text-slate-600">Exercise Logs</div>
-                                    </div>
-                                    <div className="rounded-lg border border-slate-200 p-4 text-center">
-                                        <div className="text-2xl font-bold text-[#1e628c]">{chatHistoryCount}</div>
-                                        <div className="text-sm text-slate-600">Chat Sessions</div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     )}
                     
